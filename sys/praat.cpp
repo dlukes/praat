@@ -368,7 +368,7 @@ void praat_newWithFile (autoDaata me, MelderFile file, conststring32 myName) {
 		//forget (me);
 		Melder_throw (U"The Object Window cannot contain more than ", praat_MAXNUM_OBJECTS, U" objects. You could remove some objects.");
 	}
-		
+
 	int IOBJECT = ++ theCurrentPraatObjects -> n;
 	Melder_assert (FULL_NAME == nullptr);
 	theCurrentPraatObjects -> list [IOBJECT]. name = Melder_dup_f (name.string);   // all right to crash if out of memory
@@ -490,7 +490,7 @@ void praat_removeObject (int i) {
 }
 
 static void praat_exit (int exit_code) {
-//Melder_setTracing (true);
+	Melder_setTracing (true);
 	int IOBJECT;
 	trace (U"destroy the picture window");
 	praat_picture_exit ();
@@ -986,7 +986,7 @@ static bool tryToAttachToTheCommandLine ()
 		/*
 			The result is `true` if Praat was called from a terminal window or some system() commands or Xcode,
 			and `false` if Praat was called from the Finder by double-clicking or dropping a file.
-			
+
 			FIXME:
 			The result is incorrectly `false` if the output is redirected to a file or pipe.
 			A proposed improvement is therefore:
@@ -1725,7 +1725,7 @@ void praat_run () {
 			The following relies on the facts that:
 			- positive infinity is not less than 1.0 (because it is greater than 1.0)
 			- NaN is not less than 1.0 (because it is not ordered)
-			
+
 			Note: we cannot replace `! (... < 1.0)` with `... >= 1.0`,
 			because `! (NaN < 1.0)` is true but `NaN >= 1.0` is false.
 		*/

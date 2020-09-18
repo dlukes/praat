@@ -22,6 +22,7 @@ all:
 	$(MAKE) -C external/espeak
 	$(MAKE) -C kar
 	$(MAKE) -C melder
+	$(MAKE) -C lua
 	$(MAKE) -C sys
 	$(MAKE) -C dwsys
 	$(MAKE) -C stat
@@ -45,6 +46,7 @@ all:
 		external/glpk/libglpk.a \
 		external/clapack/libclapack.a \
 		external/gsl/libgsl.a \
+		lua/luapraat.o \
 		$(LIBS)
 
 clean:

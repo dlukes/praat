@@ -1,17 +1,20 @@
 /* praat_script.cpp
  *
+ * This is for the scripty parts of Praat script -- commands etc. The
+ * Formula-like parts don't go through here.
+ *
  * Copyright (C) 1993-2020 Paul Boersma
- * 
+ *
  * This code is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or (at
  * your option) any later version.
- * 
+ *
  * This code is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this work. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,6 +25,7 @@
 #include "sendsocket.h"
 #include "UiPause.h"
 #include "DemoEditor.h"
+#include "luapraat.h"
 
 static int praat_findObjectFromString (Interpreter interpreter, conststring32 string) {
 	try {
@@ -180,17 +184,25 @@ static int parseCommaSeparatedArguments (Interpreter interpreter, char32 *argume
 
 int praat_executeCommand (Interpreter interpreter, char32 *command) {
 	static struct structStackel args [1 + MAXIMUM_NUMBER_OF_FIELDS];
+	/* MelderInfo_write (U"RUNNING COMMAND: "); */
+	/* MelderInfo_write (command); */
+	/* MelderInfo_write (U"\n"); */
 	//trace (U"praat_executeCommand: ", Melder_pointer (interpreter), U": ", command);
 	if (command [0] == U'\0' || command [0] == U'#' || command [0] == U'!' || command [0] == U';')
 		/* Skip empty lines and comments. */;
-	else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
+	else if (str32nequ (command, U"Lua ", 4)) {
+		Melder_casual (U"maybe running lua...\n");
+		MelderInfo_open ();
+		MelderInfo_write (L);
+		MelderInfo_drain ();
+	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);
 		if (command [0] == '.')
 			praat_deselectAll ();
 		if (command [0] == '-')
 			praat_deselect (IOBJECT);
 		else
-			praat_select (IOBJECT); 
+			praat_select (IOBJECT);
 		praat_show ();
 	} else if (Melder_isLetter (command [0]) && ! Melder_isUpperCaseLetter (command [0])) {   // all directives start with an ASCII lower-case letter
 		if (str32nequ (command, U"select ", 7)) {

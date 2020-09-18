@@ -26,6 +26,8 @@ makefile.defs
 praat
 Praat
 Praat.exe
+praat_barren
+praat_nogui
 
 # files created by R scripts in the test folders
 .Rdata
