@@ -9,9 +9,9 @@ char *luapraat_run() {
 
 		int status = luaL_loadfile(L, "script.lua");
 		if (status) {
-				/* If something went wrong, error message is at the top of */
-				/* the stack */
-				Melder_throw(U"Couldn't load file: ", Melder_peek8to32(lua_tostring(L, -1)));
+			/* If something went wrong, error message is at the top of */
+			/* the stack */
+			Melder_throw(U"Couldn't load file: ", Melder_peek8to32(lua_tostring(L, -1)));
 		}
 
 		return "42";
