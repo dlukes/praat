@@ -10,7 +10,7 @@ CXX = g++
 
 PKG_CONFIG ?= "pkg-config"
 
-COMMONFLAGS = -DUNIX -Dlinux -DJACK -D_FILE_OFFSET_BITS=64 `$(PKG_CONFIG) --cflags gtk+-2.0` -Wreturn-type -Wunused -Wunused-parameter -Wuninitialized -O1 -g1 -pthread
+COMMONFLAGS = -DUNIX -Dlinux -DJACK -D_FILE_OFFSET_BITS=64 `$(PKG_CONFIG) --cflags gtk+-2.0` -Wreturn-type -Wunused -Wunused-parameter -Wuninitialized -O1 -g1 -pthread -I/usr/include/luajit-2.0
 
 CFLAGS = -std=gnu99 $(COMMONFLAGS) -Werror=missing-prototypes -Werror=implicit
 

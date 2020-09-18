@@ -193,7 +193,7 @@ int praat_executeCommand (Interpreter interpreter, char32 *command) {
 	else if (str32nequ (command, U"Lua ", 4)) {
 		Melder_casual (U"maybe running lua...\n");
 		MelderInfo_open ();
-		MelderInfo_write (L);
+		MelderInfo_write (Melder_peek8to32 (luapraat_run ()));
 		MelderInfo_drain ();
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);

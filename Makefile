@@ -46,7 +46,7 @@ all:
 		external/glpk/libglpk.a \
 		external/clapack/libclapack.a \
 		external/gsl/libgsl.a \
-		lua/luapraat.o \
+		lua/libluapraat.a \
 		$(LIBS)
 
 clean:
