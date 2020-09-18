@@ -1,2 +1,2 @@
-[*.cpp]
+[*.cpp, *.h]
 indent_style = tab
