@@ -6,5 +6,7 @@ Create Sound from formula: "sine", 1, 0.0, 1.0, 44100, "1/2 * sin(2*pi*377*x)"
 bar = Get nearest zero crossing: 1, 0.5
 writeInfoLine: bar
 
-lua_val = Lua something
+lua_val = Lua lua/return.lua
 writeInfoLine: lua_val
+
+Lua lua/print.lua

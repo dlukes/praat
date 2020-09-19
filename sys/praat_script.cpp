@@ -191,9 +191,10 @@ int praat_executeCommand (Interpreter interpreter, char32 *command) {
 	if (command [0] == U'\0' || command [0] == U'#' || command [0] == U'!' || command [0] == U';')
 		/* Skip empty lines and comments. */;
 	else if (str32nequ (command, U"Lua ", 4)) {
-		Melder_casual (U"maybe running lua...\n");
+		// reset contents of info window (which is currently redirected to a
+		// string from which we'll read the result of the Lua script)
 		MelderInfo_open ();
-		MelderInfo_write (Melder_peek8to32 (luapraat_run ()));
+		MelderInfo_write (luapraat_run (command + 4));
 		MelderInfo_drain ();
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);

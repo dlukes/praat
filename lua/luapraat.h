@@ -5,4 +5,4 @@ extern "C" {
 }
 
 extern lua_State *L;
-char *luapraat_run();
+const char32 *luapraat_run(char32 *script_path);

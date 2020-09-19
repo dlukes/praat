@@ -1,7 +1,7 @@
 #include "melder.h"
 #include "luapraat.h"
 
-lua_State *L;
+lua_State *L = NULL;
 
 // maybe there shouldn't be a global lua_State and this function should
 // instead return it to the caller, who would then pop the result off
@@ -11,16 +11,28 @@ lua_State *L;
 // side, no state can then be shared between invocations (which is
 // probably fine?), the caller has to remember to free the state and
 // deal with Lua stack manipulation.
-char *luapraat_run() {
+const char32 *luapraat_run(char32 *script_path) {
+	if (L == NULL) {
 		L = luaL_newstate();
-		luaL_openlibs(L);
+	}
+	luaL_openlibs(L);
 
-		int status = luaL_loadfile(L, "script.lua");
-		if (status) {
-			/* If something went wrong, error message is at the top of */
-			/* the stack */
-			Melder_throw(U"Couldn't load file: ", Melder_peek8to32(lua_tostring(L, -1)));
-		}
+	const char *script_path_c = Melder_peek32to8(script_path);
+	int load_error = luaL_loadfile(L, script_path_c);
+	if (load_error) {
+		// If something went wrong, error message is at the top of the stack
+		Melder_throw(U"Couldn't load file: ", Melder_peek8to32(lua_tostring(L, -1)));
+	}
 
-		return "42";
+	int call_error = lua_pcall(L, 0, LUA_MULTRET, 0);
+	if (call_error) {
+		Melder_throw(U"Failed to run script: ", Melder_peek8to32(lua_tostring(L, -1)));
+	}
+
+	const char *result_c = lua_tostring(L, -1);
+	// NOTE: Can't call lua_close here because that would free the memory
+	// we're returning a pointer to. I should probably put a lua_close
+	// somewhere at the end of the interpreter loop? Or maybe when Praat
+	// exits?
+	return Melder_peek8to32(result_c);
 }
