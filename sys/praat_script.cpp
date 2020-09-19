@@ -194,7 +194,7 @@ int praat_executeCommand (Interpreter interpreter, char32 *command) {
 		// reset contents of info window (which is currently redirected to a
 		// string from which we'll read the result of the Lua script)
 		MelderInfo_open ();
-		MelderInfo_write (luapraat_run (command + 4));
+		MelderInfo_write (luapraat_run (command + 4).get());
 		MelderInfo_drain ();
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);

@@ -4,5 +4,4 @@ extern "C" {
 	#include <lauxlib.h>
 }
 
-extern lua_State *L;
-const char32 *luapraat_run(char32 *script_path);
+autostring32 luapraat_run(const char32 *script_path);
