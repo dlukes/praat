@@ -1,9 +1,41 @@
 #include "melder.h"
 #include "luapraat.h"
 
+// 1. Wrap Praat command running function in a Lua C function wrapper.
+// 2. Load it into Lua as a global variable, e.g. _praat.
+// 3. Use it in our praat Lua lib.
+// 4. Load that lib into Lua at startup. Either include the string in
+// the binary (which looks hard to do in C++ unlike in Rust, for some
+// reason), or put it in <Praat dir>/lua and load from there. But having
+// it be on the file system is error prone. Plus now that I think of it,
+// Praat comes as a single executable download which writes that dir on
+// first startup, so nope.
+//
+// Cf. <https://www.lua.org/pil/26.1.html>
+
+static const char *luapraat_lib = R"(
+local M = {}
+
+setmetatable(M, {
+	__index = function(_, cmd)
+		return function(...)
+			local args = table.concat({...}, " ")
+			cmd = cmd:gsub("_", " ")
+			cmd = cmd:gsub("^%l", string.upper)
+			cmd = string.format("%s: %s", cmd, args)
+			print(cmd)	-- TODO: make Praat run this instead, obviously
+		end
+	end
+})
+
+return M
+)";
+
 autostring32 luapraat_run(const char32 *script_path) {
 	lua_State *L = luaL_newstate();
 	luaL_openlibs(L);
+	luaL_dostring(L, luapraat_lib);
+	lua_setglobal(L, "praat");
 
 	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
 	int load_error = luaL_loadfile(L, script_path_fs);
