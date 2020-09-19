@@ -30,9 +30,20 @@ const char32 *luapraat_run(char32 *script_path) {
 	}
 
 	const char *result_c = lua_tostring(L, -1);
+
 	// NOTE: Can't call lua_close here because that would free the memory
 	// we're returning a pointer to. I should probably put a lua_close
 	// somewhere at the end of the interpreter loop? Or maybe when Praat
 	// exits?
+	// lua_close(L);
+
+	// NOTE: For the same reason, it might not be a good idea to call
+	// lua_pop. The string might then be garbage collected and the pointer
+	// invalidated. This could be an argument in favor of allocating a
+	// copy of the string and returning it by value, but maybe not since
+	// we don't need to keep it around long.
+	while (lua_gettop(L) > 0) lua_pop(L, 1);
+	// Melder_casual(U"2: number of elements left on stack: ", lua_gettop(L));
+
 	return Melder_peek8to32(result_c);
 }
