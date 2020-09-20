@@ -9,4 +9,4 @@ writeInfoLine: bar
 lua_val = Lua lua/return.lua
 writeInfoLine: lua_val
 
-Lua lua/print.lua
+Lua lua/call.lua

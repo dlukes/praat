@@ -6,8 +6,8 @@ setmetatable(M, {
       local args = table.concat({...}, " ")
       cmd = cmd:gsub("_", " ")
       cmd = cmd:gsub("^%l", string.upper)
-      cmd = string.format("%s: %s", cmd, args)
-      _print(cmd) -- TODO: make Praat run this instead, obviously
+      local cmd_and_args = string.format("%s: %s", cmd, args)
+      return _praat(cmd_and_args)
     end
   end
 })
