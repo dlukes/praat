@@ -4,4 +4,6 @@ extern "C" {
 	#include <lauxlib.h>
 }
 
-autostring32 luapraat_run(const char32 *script_path);
+#include "Interpreter.h"
+
+autostring32 luapraat_run(const char32 *script_path, Interpreter *interpreter);

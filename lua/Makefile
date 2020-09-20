@@ -1,6 +1,6 @@
 include ../makefile.defs
 
-CPPFLAGS = -I../melder -I/usr/include/luajit-2.0
+CPPFLAGS = -I../melder -I../sys -I/usr/include/luajit-2.0
 OBJECTS = luapraat.o
 
 .PHONY: all clean
