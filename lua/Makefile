@@ -17,4 +17,7 @@ libluapraat.a: $(OBJECTS)
 	$(AR) cq libluapraat.a $(OBJECTS)
 	$(RANLIB) libluapraat.a
 
-$(OBJECTS): *.h
+%.o: *.h ../melder/*.h %.cpp
+
+luapraat.cpp: luapraat.in
+	./include_str.py

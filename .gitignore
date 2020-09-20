@@ -32,3 +32,6 @@ praat_nogui
 # files created by R scripts in the test folders
 .Rdata
 .Rhistory
+
+# generated files
+lua/luapraat.cpp
