@@ -12,13 +12,14 @@ static int luapraat_call_praat(lua_State *L) {
 	autostring32 cmd = Melder_8to32(cmd_c);
 
 	bool should_divert = !str32nequ(cmd.get(), U"appendInfo", 10) && !str32nequ(cmd.get(), U"writeInfo", 9);
-	MelderString *old_divert;
+	// TODO: create an API for this buffer switch back and forth, instead
+	// of directly meddling with _p_currentBuffer and _foregroundBuffer?
+	MelderString *orig_current_buffer = MelderInfo::_p_currentBuffer;
 	if (should_divert) {
 		MelderString_empty(&output);
-		// TODO: encapsulate getting current buffer in a function instead of
-		// direct access?
-		old_divert = MelderInfo::_p_currentBuffer;
 		MelderInfo::_p_currentBuffer = &output;
+	} else {
+		MelderInfo::_p_currentBuffer = &MelderInfo::_foregroundBuffer;
 	}
 
 	// TODO: what does the status tell us, what should we do with it?
@@ -48,7 +49,7 @@ static int luapraat_call_praat(lua_State *L) {
 		// reset to old divert (if any, otherwise to regular info window)
 		// instead of Melder_divertInfo(nullptr), which would ignore any old
 		// divert
-		MelderInfo::_p_currentBuffer = old_divert;
+		MelderInfo::_p_currentBuffer = orig_current_buffer;
 	} else {
 		lua_pushnil(L);
 	}

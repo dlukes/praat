@@ -11,7 +11,6 @@ appendInfoLine: bar
 lua_val = Lua lua/return.lua
 appendInfoLine: lua_val
 
-Lua lua/create_obj.lua
 lua_obj = Lua lua/create_obj.lua
 appendInfoLine: "object created from Lua: ", lua_obj
 select lua_obj
