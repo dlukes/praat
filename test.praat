@@ -11,8 +11,9 @@ appendInfoLine: bar
 lua_val = Lua lua/return.lua
 appendInfoLine: lua_val
 
+Lua lua/create_obj.lua
 lua_obj = Lua lua/create_obj.lua
-appendInfoLine: lua_obj
+appendInfoLine: "object created from Lua: ", lua_obj
 select lua_obj
 zc = Get nearest zero crossing: 1, 0
 appendInfoLine: zc

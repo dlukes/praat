@@ -1,5 +1,19 @@
 local M = {}
 
+local function praat_tonumber(val)
+  return type(val) == "string" and tonumber(string.match(val, "^(%S+)%s")) or val
+end
+
+local string_meta = getmetatable("")
+function string_meta.__add(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__sub(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__mul(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__div(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__mod(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__pow(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__unm(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__idiv(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+
 local function stringify_args(...)
   local nargs = select("#", ...)
   local stringified = {}
@@ -23,6 +37,7 @@ local function stringify_args(...)
 end
 
 setmetatable(M, {
+  -- dynamically generate calls to Praat commands
   __index = function(_, cmd)
     return function(...)
       local args = stringify_args(...)
