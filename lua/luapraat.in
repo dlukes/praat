@@ -1,5 +1,6 @@
 #include "melder.h"
 #include "praat_script.h"
+#include "praatP.h"
 #include "luapraat.h"
 
 static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
@@ -23,12 +24,27 @@ static int luapraat_call_praat(lua_State *L) {
 	// TODO: what does the status tell us, what should we do with it?
 	try {
 		int status = praat_executeCommand(*INTERPRETER, cmd.get());
-	} catch (MelderError e) {
+	} catch (MelderError) {
 		return luaL_error(L, "Praat command failed: `%s`", cmd_c);
 	}
 
-	if (should_divert) {
-		lua_pushstring(L, Melder_32to8(output.string).get());
+	if (should_divert ) {
+		if (output.string[0] == 1) {
+			// sentinel which indicates current object ID should be returned
+			// instead; this is basically copy-pasted from Interpreter.cpp ->
+			// TODO: cleanup
+			int IOBJECT, selectedObject = 0, numberOfSelectedObjects = 0;
+			WHERE (SELECTED) { selectedObject = IOBJECT; numberOfSelectedObjects += 1; }
+			if (numberOfSelectedObjects > 1) {
+				return luaL_error(L, "Multiple objects selected. Cannot assign object ID to variable.");
+			} else if (numberOfSelectedObjects == 0) {
+				return luaL_error(L, "No objects selected. Cannot assign object ID to variable.");
+			} else {
+				lua_pushnumber(L, theCurrentPraatObjects->list[selectedObject].id);
+			}
+		} else if (should_divert) {
+			lua_pushstring(L, Melder_32to8(output.string).get());
+		}
 		// reset to old divert (if any, otherwise to regular info window)
 		// instead of Melder_divertInfo(nullptr), which would ignore any old
 		// divert
