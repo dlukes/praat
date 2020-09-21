@@ -7,7 +7,8 @@ Interpreter *INTERPRETER;
 
 static int luapraat_call_praat(lua_State *L) {
 	static MelderString output;
-	autostring32 cmd = Melder_8to32(lua_tostring(L, 1));
+	const char *cmd_c = lua_tostring(L, 1);
+	autostring32 cmd = Melder_8to32(cmd_c);
 
 	bool should_divert = !str32nequ(cmd.get(), U"appendInfo", 10) && !str32nequ(cmd.get(), U"writeInfo", 9);
 	MelderString *old_divert;
@@ -20,10 +21,11 @@ static int luapraat_call_praat(lua_State *L) {
 	}
 
 	// TODO: what does the status tell us, what should we do with it?
-	// TODO: if there's a problem running the command, the exception
-	// currently doesn't propagate appropriately and instead, the program
-	// crashes with SIGABRT; how to avoid that?
-	int status = praat_executeCommand(*INTERPRETER, cmd.get());
+	try {
+		int status = praat_executeCommand(*INTERPRETER, cmd.get());
+	} catch (MelderError e) {
+		return luaL_error(L, "Praat command failed: `%s`", cmd_c);
+	}
 
 	if (should_divert) {
 		lua_pushstring(L, Melder_32to8(output.string).get());
@@ -52,12 +54,12 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter *interpreter) {
 	int load_error = luaL_loadfile(L, script_path_fs);
 	if (load_error) {
 		// If something went wrong, error message is at the top of the stack
-		Melder_throw(U"Couldn't load file: ", Melder_8to32(lua_tostring(L, -1)).get());
+		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
 
 	int call_error = lua_pcall(L, 0, LUA_MULTRET, 0);
 	if (call_error) {
-		Melder_throw(U"Failed to run script: ", Melder_8to32(lua_tostring(L, -1)).get());
+		Melder_throw(U"Error running Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
 
 	const char *result_c = lua_tostring(L, -1);
