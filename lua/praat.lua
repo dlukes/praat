@@ -1,5 +1,10 @@
 local M = {}
 
+function M.inspect(value)
+  -- TODO: a proper pretty printer
+  print(value)
+end
+
 local function praat_tonumber(val)
   return type(val) == "string" and tonumber(string.match(val, "^(%S+)%s")) or val
 end
