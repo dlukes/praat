@@ -2,7 +2,6 @@
 
 # System: Linux
 # Paul Boersma 2020-05-20
-# David Lukeš 2020-09-18
 
 CC = gcc
 

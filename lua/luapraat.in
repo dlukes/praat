@@ -6,20 +6,34 @@ static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
 Interpreter *INTERPRETER;
 
 static int luapraat_call_praat(lua_State *L) {
+	static MelderString output;
 	autostring32 cmd = Melder_8to32(lua_tostring(L, 1));
-	Melder_casual(U"DIVERTING OUTPUT");
-	static MelderString infoOutput;
-	MelderString_empty(&infoOutput);
-	autoMelderDivertInfo divert(&infoOutput);
-	Melder_casual(U"RUNNING COMMAND: ", cmd.get());
+
+	bool should_divert = !str32nequ(cmd.get(), U"appendInfo", 10) && !str32nequ(cmd.get(), U"writeInfo", 9);
+	MelderString *old_divert;
+	if (should_divert) {
+		MelderString_empty(&output);
+		// TODO: encapsulate getting current buffer in a function instead of
+		// direct access?
+		old_divert = MelderInfo::_p_currentBuffer;
+		MelderInfo::_p_currentBuffer = &output;
+	}
+
 	// TODO: what does the status tell us, what should we do with it?
-	// TODO: this is currently failing with SIGABRT, why? maybe the
-	// interpreter doesn't like being used to execute a command while it's
-	// still in the middle of executing another one (the parent Lua
-	// command)?
+	// TODO: if there's a problem running the command, the exception
+	// currently doesn't propagate appropriately and instead, the program
+	// crashes with SIGABRT; how to avoid that?
 	int status = praat_executeCommand(*INTERPRETER, cmd.get());
-	Melder_casual(U"PUSHING RESULT ONTO LUA STACK");
-	lua_pushstring(L, Melder_32to8(infoOutput.string).get());
+
+	if (should_divert) {
+		lua_pushstring(L, Melder_32to8(output.string).get());
+		// reset to old divert (if any, otherwise to regular info window)
+		// instead of Melder_divertInfo(nullptr), which would ignore any old
+		// divert
+		MelderInfo::_p_currentBuffer = old_divert;
+	} else {
+		lua_pushnil(L);
+	}
 	return 1;
 }
 
@@ -47,8 +61,15 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter *interpreter) {
 	}
 
 	const char *result_c = lua_tostring(L, -1);
-	// NOTE: The conversion assumes UTF-8 output from Lua.
-	autostring32 result = Melder_8to32(result_c);
+	autostring32 result;
+	// If output is empty, signal to Praat we want to "return" the current
+	// Praat object, using the sentinel value expected by Interpreter_run.
+	if (result_c == nullptr) {
+		result = Melder_8to32("\x01");
+	} else {
+		// NOTE: The conversion assumes UTF-8 output from Lua.
+		result = Melder_8to32(result_c);
+	}
 	// Melder_casual(U"number of elements left on stack: ", lua_gettop(L));
 	lua_settop(L, 0);
 	lua_close(L);

@@ -2541,7 +2541,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							/*
 								Get the value of the query.
 							*/
-							Melder_casual (U"getting value of variable: ", Melder_pointer (me), U": ", p);
+							// Melder_casual (U"-- getting value of variable: ", p);
 
 							// this works by diverting info output to a string, which
 							// is then parsed and assigned as the value of the
@@ -2551,16 +2551,16 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							MelderString_empty (& valueString);
 							autoMelderDivertInfo divert (& valueString);
 							MelderString_appendCharacter (& valueString, 1);   // will be overwritten by something totally different if any MelderInfo function is called...
-							Melder_casual (U"this is the first char of valueString prior to running the cmd: ", valueString.string [0]);
+							// Melder_casual (U"first char of valueString prior to running the cmd: >>>", valueString.string [0], U"<<<");
+							// Melder_casual (U"length of valueString prior to running the cmd: >>>", str32len_utf8(valueString.string, true), U"<<<");
 							int status = praat_executeCommand (me, p);
-							Melder_casual (U"this is the first char of valueString after running the cmd: ", valueString.string [0]);
-							Melder_casual (U"this is the second char of valueString prior to running the cmd: ", valueString.string [1]);
-							Melder_casual (U"this is the third char of valueString prior to running the cmd: ", valueString.string [2]);
-							Melder_casual (U"this is the string version of the result of the command: >>>", valueString.string, U"<<<");
+							// Melder_casual (U"first char of valueString after running the cmd: >>>", valueString.string [0], U"<<<");
+							// Melder_casual (U"length of valueString after running the cmd: >>>", str32len_utf8(valueString.string, true), U"<<<");
+							// Melder_casual (U"-- this is the string version of the result of the command: >>>", valueString.string, U"<<<");
 							if (status == 0) {
 								value = undefined;
 							} else if (valueString.string [0] == 1) {   // ...not overwritten by any MelderInfo function? then the return value will be the selected object
-								Melder_casual(U"value is selected object");
+								// Melder_casual(U"-- value is selected object");
 								int IOBJECT, selectedObject = 0, numberOfSelectedObjects = 0;
 								WHERE (SELECTED) { selectedObject = IOBJECT; numberOfSelectedObjects += 1; }
 								if (numberOfSelectedObjects > 1) {
@@ -2571,7 +2571,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 									value = theCurrentPraatObjects -> list [selectedObject]. id;
 								}
 							} else {
-								Melder_casual(U"getting value from string");
+								// Melder_casual(U"-- getting value from string");
 								value = Melder_atof (valueString.string);   // including --undefined--
 							}
 						} else {
@@ -2581,7 +2581,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							Interpreter_numericExpression (me, p, & value);
 						}
 
-						Melder_casual (U"the value has been fetched and parsed and can be assigned: ", value);
+						// Melder_casual (U"-- the value has been fetched and parsed and can be assigned: ", value);
 
 						/*
 							Assign the value to a variable.

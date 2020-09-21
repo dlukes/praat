@@ -1,3 +1,5 @@
-local ans = praat.get_pitch_at_time(3, 4)
-_print("PRAAT REPLIED (from Lua):", ans)
+local ans = praat.Report_system_properties()
+print("Lua says (through Praat) that Praat replied:")
+print(ans)
+print(nil)
 

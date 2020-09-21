@@ -184,18 +184,26 @@ static int parseCommaSeparatedArguments (Interpreter interpreter, char32 *argume
 
 int praat_executeCommand (Interpreter interpreter, char32 *command) {
 	static struct structStackel args [1 + MAXIMUM_NUMBER_OF_FIELDS];
-	/* MelderInfo_write (U"RUNNING COMMAND: "); */
-	/* MelderInfo_write (command); */
-	/* MelderInfo_write (U"\n"); */
-	//trace (U"praat_executeCommand: ", Melder_pointer (interpreter), U": ", command);
+	// Melder_casual (U"-- RUNNING COMMAND: ", command);
+	// char32 *nested_cmd = U"writeInfoLine: \"running command inside command\"";
+	// autostring32 nested_cmd = Melder_dup(U"Create Sound as pure tone: \"tone\", 1, 0, 0.2, 44100, 440, 0.2, 0.01, 0.01");
+	// if (!str32equ(command, nested_cmd.get())) {
+	// 	praat_executeCommand (interpreter, nested_cmd.get());
+	// }
 	if (command [0] == U'\0' || command [0] == U'#' || command [0] == U'!' || command [0] == U';')
 		/* Skip empty lines and comments. */;
 	else if (str32nequ (command, U"Lua ", 4)) {
-		// reset contents of info window (which is currently redirected to a
-		// string from which we'll read the result of the Lua script)
-		MelderInfo_open ();
+		// If info output is currently redirected to a string (from which
+		// we'll later read the result of the Lua script), reset the string
+		// so as to clear out the sentinel value placed there to check
+		// whether the command generated output. If the output is *not*
+		// redirected, we don't want to force-clear the Info window, so
+		// leave it alone. This is the difference between "x = Lua ..." vs.
+		// "Lua ..." in the Praat script.
+		if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
+			MelderInfo_open ();
+		}
 		MelderInfo_write (luapraat_run (command + 4, & interpreter).get());
-		MelderInfo_drain ();
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);
 		if (command [0] == '.')
