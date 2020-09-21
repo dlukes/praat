@@ -17,6 +17,9 @@ static int luapraat_call_praat(lua_State *L) {
 	MelderString *orig_current_buffer = MelderInfo::_p_currentBuffer;
 	if (should_divert) {
 		MelderString_empty(&output);
+		// sentinel which indicates current object ID should be returned
+		// instead; will be overwritten if any actual output is generated
+		MelderString_appendCharacter(&output, 1);
 		MelderInfo::_p_currentBuffer = &output;
 	} else {
 		MelderInfo::_p_currentBuffer = &MelderInfo::_foregroundBuffer;
@@ -39,9 +42,7 @@ static int luapraat_call_praat(lua_State *L) {
 
 	if (should_divert) {
 		if (output.string[0] == 1) {
-			// sentinel which indicates current object ID should be returned
-			// instead; this is basically copy-pasted from Interpreter.cpp ->
-			// TODO: cleanup
+			// this is basically copy-pasted from Interpreter.cpp -> TODO: cleanup
 			int IOBJECT, selectedObject = 0, numberOfSelectedObjects = 0;
 			WHERE (SELECTED) { selectedObject = IOBJECT; numberOfSelectedObjects += 1; }
 			if (numberOfSelectedObjects > 1) {
@@ -83,18 +84,8 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter *interpreter) {
 		Melder_throw(U"Error running Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
 
-	const char *result_c = lua_tostring(L, -1);
-	autostring32 result;
-	// If there is no output but MelderInfo is diverted (= Praat is
-	// expecting a return value), signal to Praat we want to "return" the
-	// current Praat object, using the sentinel value expected by
-	// Interpreter_run.
-	if (result_c == nullptr && MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
-		result = Melder_8to32("\x01");
-	} else {
-		// NOTE: The conversion assumes UTF-8 output from Lua.
-		result = Melder_8to32(result_c);
-	}
+	// NOTE: The conversion assumes UTF-8 output from Lua.
+	autostring32 result = Melder_8to32(lua_tostring(L, -1));
 	// Melder_casual(U"number of elements left on stack: ", lua_gettop(L));
 	lua_settop(L, 0);
 	lua_close(L);

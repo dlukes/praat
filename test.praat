@@ -12,10 +12,10 @@ lua_val = Lua lua/return.lua
 appendInfoLine: lua_val
 
 lua_obj = Lua lua/create_obj.lua
-appendInfoLine: "object created from Lua: ", lua_obj
+appendInfoLine: "object created through Lua: ", lua_obj
 select lua_obj
 zc = Get nearest zero crossing: 1, 0
-appendInfoLine: zc
+appendInfoLine: "nearest zero crossing in Praat: ", zc
 
 Lua lua/call.lua
 
