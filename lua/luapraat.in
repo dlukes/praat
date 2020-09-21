@@ -22,14 +22,22 @@ static int luapraat_call_praat(lua_State *L) {
 		MelderInfo::_p_currentBuffer = &MelderInfo::_foregroundBuffer;
 	}
 
+	bool cmd_failed = false;
 	// TODO: what does the status tell us, what should we do with it?
 	try {
 		int status = praat_executeCommand(*INTERPRETER, cmd.get());
 	} catch (MelderError) {
+		cmd_failed = true;
+	}
+	// reset to old divert (if any, otherwise to regular info window)
+	// instead of Melder_divertInfo(nullptr), which would ignore any old
+	// divert
+	MelderInfo::_p_currentBuffer = orig_current_buffer;
+	if (cmd_failed) {
 		return luaL_error(L, "Praat command failed: `%s`", cmd_c);
 	}
 
-	if (should_divert ) {
+	if (should_divert) {
 		if (output.string[0] == 1) {
 			// sentinel which indicates current object ID should be returned
 			// instead; this is basically copy-pasted from Interpreter.cpp ->
@@ -43,13 +51,9 @@ static int luapraat_call_praat(lua_State *L) {
 			} else {
 				lua_pushnumber(L, theCurrentPraatObjects->list[selectedObject].id);
 			}
-		} else if (should_divert) {
+		} else {
 			lua_pushstring(L, Melder_32to8(output.string).get());
 		}
-		// reset to old divert (if any, otherwise to regular info window)
-		// instead of Melder_divertInfo(nullptr), which would ignore any old
-		// divert
-		MelderInfo::_p_currentBuffer = orig_current_buffer;
 	} else {
 		lua_pushnil(L);
 	}
