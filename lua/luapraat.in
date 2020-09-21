@@ -62,9 +62,11 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter *interpreter) {
 
 	const char *result_c = lua_tostring(L, -1);
 	autostring32 result;
-	// If output is empty, signal to Praat we want to "return" the current
-	// Praat object, using the sentinel value expected by Interpreter_run.
-	if (result_c == nullptr) {
+	// If there is no output but MelderInfo is diverted (= Praat is
+	// expecting a return value), signal to Praat we want to "return" the
+	// current Praat object, using the sentinel value expected by
+	// Interpreter_run.
+	if (result_c == nullptr && MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
 		result = Melder_8to32("\x01");
 	} else {
 		// NOTE: The conversion assumes UTF-8 output from Lua.

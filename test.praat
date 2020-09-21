@@ -19,4 +19,4 @@ appendInfoLine: zc
 
 Lua lua/call.lua
 
-# appendInfoLine: "And that's all, folks!"
+appendInfoLine: "And that's all, folks!"
