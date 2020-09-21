@@ -5,10 +5,14 @@ function M.inspect(value)
   print(value)
 end
 
+-- Praat-like string-to-number conversion...
 local function praat_tonumber(val)
   return type(val) == "string" and tonumber(string.match(val, "^(%S+)%s")) or val
 end
 
+-- ... performed automatically when doing arithmetic on strings (Lua
+-- already has string-to-number autoconversion, but it's too strict, it
+-- doesn't allow trailing garbage)
 local string_meta = getmetatable("")
 function string_meta.__add(a, b) return praat_tonumber(a) + praat_tonumber(b) end
 function string_meta.__sub(a, b) return praat_tonumber(a) + praat_tonumber(b) end
@@ -47,7 +51,10 @@ setmetatable(M, {
     return function(...)
       local args = stringify_args(...)
       cmd = cmd:gsub("_", " ")
-      local cmd_and_args = #args > 0 and string.format("%s: %s", cmd, args) or cmd
+      -- TODO: any other important commands that don't separate
+      -- arguments with a colon?
+      local sep = cmd == "select" and "" or ":"
+      local cmd_and_args = #args > 0 and string.format("%s%s %s", cmd, sep, args) or cmd
       return _praat(cmd_and_args)
     end
   end
