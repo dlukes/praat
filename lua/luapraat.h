@@ -6,4 +6,4 @@ extern "C" {
 
 #include "Interpreter.h"
 
-autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter);
+void luapraat_run_file(const char32 *script_path, Interpreter interpreter);

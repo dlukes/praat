@@ -193,17 +193,7 @@ int praat_executeCommand (Interpreter interpreter, char32 *command) {
 	if (command [0] == U'\0' || command [0] == U'#' || command [0] == U'!' || command [0] == U';')
 		/* Skip empty lines and comments. */;
 	else if (str32nequ (command, U"Lua ", 4)) {
-		// If info output is currently redirected to a string (from which
-		// we'll later read the result of the Lua script), reset the string
-		// so as to clear out the sentinel value placed there to check
-		// whether the command generated output. If the output is *not*
-		// redirected, we don't want to force-clear the Info window, so
-		// leave it alone. This is the difference between "x = Lua ..." vs.
-		// "Lua ..." in the Praat script.
-		if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
-			MelderInfo_open ();
-		}
-		MelderInfo_write (luapraat_run (command + 4, interpreter).get());
+		luapraat_run_file (command + 4, interpreter);
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);
 		if (command [0] == '.')

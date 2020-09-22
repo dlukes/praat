@@ -1490,6 +1490,13 @@ void Interpreter_run (Interpreter me, char32 *text) {
 				char32 c0;
 				bool fail = false;
 				MelderString_copy (& command2, lines [lineNumber]);
+
+				if (str32equ (command2.string, U"# Lua")) {
+					/* luapraat_run_chunk(text); */
+					Interpreter_stop(me);
+					continue;
+				}
+
 				c0 = command2. string [0];
 				if (c0 == U'\0')
 					continue;

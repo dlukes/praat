@@ -76,6 +76,17 @@ static lua_State *luapraat_setup(Interpreter interpreter) {
 	// TODO: is there maybe a cleaner way to pass the interpreter to the
 	// C/Lua interface function than via a global?
 	INTERPRETER = interpreter;
+	// If info output is currently redirected to a string (from which
+	// we'll later read the result of the Lua script), reset the string
+	// so as to clear out the sentinel value placed there to check
+	// whether the command generated output. If the output is *not*
+	// redirected, we don't want to force-clear the Info window, so
+	// leave it alone. This is the difference between "x = Lua ..." vs.
+	// "Lua ..." in the Praat script.
+	if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
+		MelderInfo_open ();
+	}
+
 	lua_State *L = luaL_newstate();
 	luaL_openlibs(L);
 
@@ -91,21 +102,19 @@ static lua_State *luapraat_setup(Interpreter interpreter) {
 	return L;
 }
 
-static autostring32 luapraat_do_run(lua_State *L) {
+static void luapraat_do_run(lua_State *L) {
 	int call_error = lua_pcall(L, 0, LUA_MULTRET, 0);
 	if (call_error) {
 		Melder_throw(U"Error running Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
-
 	// NOTE: The conversion assumes UTF-8 output from Lua.
-	autostring32 result = Melder_8to32(lua_tostring(L, -1));
+	MelderInfo_write(Melder_8to32(lua_tostring(L, -1)).get());
 	// Melder_casual(U"number of elements left on stack: ", lua_gettop(L));
 	lua_settop(L, 0);
 	lua_close(L);
-	return result;
 }
 
-autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
+void luapraat_run_file(const char32 *script_path, Interpreter interpreter) {
 	lua_State *L = luapraat_setup(interpreter);
 
 	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
@@ -115,7 +124,7 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
 		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
 
-	return luapraat_do_run(L);
+	luapraat_do_run(L);
 }
 
 // vi: ft=cpp:
