@@ -2,21 +2,19 @@ clearinfo
 
 foo$ = "1"
 foo$ += "2"
-appendInfoLine: foo$
-
-Create Sound from formula: "sine", 1, 0.0, 1.0, 44100, "1/2 * sin(2*pi*377*x)"
-bar = Get nearest zero crossing: 1, 0.5
-appendInfoLine: bar
+appendInfoLine: "# ", foo$
 
 lua_val = Lua lua/return.lua
-appendInfoLine: lua_val
+appendInfoLine: "# ", lua_val
 
 lua_obj = Lua lua/create_obj.lua
-appendInfoLine: "object created through Lua: ", lua_obj
+appendInfoLine: "# object created through Lua: ", lua_obj
 select lua_obj
-zc = Get nearest zero crossing: 1, 0
-appendInfoLine: "nearest zero crossing in Praat: ", zc
+zc$ = Get nearest zero crossing: 1, 0
+appendInfoLine: "# nearest zero crossing in Praat: ", zc$
+zcn = number(zc$)
+appendInfoLine: "# nearest zero crossing + 2 in Praat: ", zcn + 2
 
 Lua lua/call.lua
 
-appendInfoLine: "And that's all, folks!"
+appendInfoLine: "# And that's all, folks!"
