@@ -17,4 +17,6 @@ appendInfoLine: "# nearest zero crossing + 2 in Praat: ", zcn + 2
 
 Lua call.lua
 
+Lua praat_dir_lib.lua
+
 appendInfoLine: "# And that's all, folks!"

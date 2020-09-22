@@ -1,5 +1,17 @@
 local M = {}
 
+local dir_sep = package.config:sub(1, 1)
+local pat_sep = package.config:sub(3, 3)
+local glob = package.config:sub(5, 5)
+local praat_lua = PRAAT_DIR..dir_sep.."lua"..dir_sep
+package.path = (
+  praat_lua..glob..".lua"
+    ..pat_sep..
+  praat_lua..glob..dir_sep.."init.lua"
+    ..pat_sep..
+  package.path
+)
+
 function M.inspect(value)
   -- TODO: a proper pretty printer
   print(value)

@@ -8,6 +8,7 @@ static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
 // that's static
 static Interpreter INTERPRETER;
 static PraatObjects PRAAT_OBJECTS = theCurrentPraatObjects;
+extern structMelderDir praatDir;
 
 static int luapraat_call_praat(lua_State *L) {
 	static MelderString output;
@@ -72,15 +73,20 @@ static int luapraat_call_praat(lua_State *L) {
 }
 
 autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
-	lua_State *L = luaL_newstate();
-	luaL_openlibs(L);
-	lua_pushcfunction(L, luapraat_call_praat);
-	lua_setglobal(L, "_praat");
-	luaL_dostring(L, LUAPRAAT_LUALIB);
-	lua_setglobal(L, "praat");
 	// TODO: is there maybe a cleaner way to pass the interpreter to the
 	// C/Lua interface function than via a global?
 	INTERPRETER = interpreter;
+	lua_State *L = luaL_newstate();
+	luaL_openlibs(L);
+
+	lua_pushstring(L, Melder_peek32to8_fileSystem(Melder_dirToPath(&praatDir)));
+	lua_setglobal(L, "PRAAT_DIR");
+
+	lua_pushcfunction(L, luapraat_call_praat);
+	lua_setglobal(L, "_praat");
+
+	luaL_dostring(L, LUAPRAAT_LUALIB);
+	lua_setglobal(L, "praat");
 
 	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
 	int load_error = luaL_loadfile(L, script_path_fs);

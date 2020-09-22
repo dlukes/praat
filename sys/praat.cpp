@@ -1238,6 +1238,11 @@ void praat_init (conststring32 title, int argc, char **argv)
 				Melder_createDirectory (& prefParentDir, name, 0);
 			#endif
 			MelderDir_getSubdir (& prefParentDir, name, & praatDir);
+			#if defined (UNIX) || defined (macintosh)
+				Melder_createDirectory (& praatDir, U"lua", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			#else
+				Melder_createDirectory (& praatDir, U"lua", 0);
+			#endif
 		} catch (MelderError) {
 			/*
 			 * If we arrive here, the directory could not be created,
