@@ -3,12 +3,12 @@
 #include "praatP.h"
 #include "luapraat.h"
 
-static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
 // NOTE: can't directly set to theInterpreter from Formula.cpp because
 // that's static
 static Interpreter INTERPRETER;
 static PraatObjects PRAAT_OBJECTS = theCurrentPraatObjects;
 extern structMelderDir praatDir;
+static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
 
 static int luapraat_call_praat(lua_State *L) {
 	static MelderString output;
@@ -102,11 +102,16 @@ static lua_State *luapraat_setup(Interpreter interpreter) {
 	return L;
 }
 
-static void luapraat_do_run(lua_State *L) {
+static void luapraat_do_run(lua_State *L, int load_error) {
+	if (load_error) {
+		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
+	}
+
 	int call_error = lua_pcall(L, 0, LUA_MULTRET, 0);
 	if (call_error) {
 		Melder_throw(U"Error running Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
+
 	// NOTE: The conversion assumes UTF-8 output from Lua.
 	MelderInfo_write(Melder_8to32(lua_tostring(L, -1)).get());
 	// Melder_casual(U"number of elements left on stack: ", lua_gettop(L));
@@ -116,15 +121,13 @@ static void luapraat_do_run(lua_State *L) {
 
 void luapraat_run_file(const char32 *script_path, Interpreter interpreter) {
 	lua_State *L = luapraat_setup(interpreter);
-
 	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
-	int load_error = luaL_loadfile(L, script_path_fs);
-	if (load_error) {
-		// If something went wrong, error message is at the top of the stack
-		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
-	}
+	luapraat_do_run(L, luaL_loadfile(L, script_path_fs));
+}
 
-	luapraat_do_run(L);
+void luapraat_run_chunk(const char32 *chunk, Interpreter interpreter) {
+	lua_State *L = luapraat_setup(interpreter);
+	luapraat_do_run(L, luaL_loadstring(L, Melder_32to8(chunk).get()));
 }
 
 // vi: ft=cpp:

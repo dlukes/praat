@@ -26,6 +26,7 @@ extern structMelderDir praatDir;
 #include "Formula.h"
 #include "praat_version.h"
 #include "../kar/UnicodeData.h"
+#include "luapraat.h"
 
 #include "../fon/Vector.h"
 
@@ -1333,6 +1334,8 @@ static void assignToNumericMatrixElement (Interpreter me, char32 *& p, const cha
 }
 
 void Interpreter_run (Interpreter me, char32 *text) {
+	int64 textLength = str32len (text);
+	bool isLuaScript = false;
 	autovector <mutablestring32> lines;   // not autostringvector, because the elements are reference copies
 	integer lineNumber = 0;
 	bool assertionFailed = false;
@@ -1492,8 +1495,15 @@ void Interpreter_run (Interpreter me, char32 *text) {
 				MelderString_copy (& command2, lines [lineNumber]);
 
 				if (str32equ (command2.string, U"# Lua")) {
-					/* luapraat_run_chunk(text); */
-					Interpreter_stop(me);
+					isLuaScript = true;
+					// restore original newlines
+					for (int64 i = 0; i < textLength; i++) {
+						if (text [i] == U'\0') {
+							text [i] = U'\n';
+						}
+					}
+					luapraat_run_chunk (text, me);
+					Interpreter_stop (me);
 					continue;
 				}
 
@@ -2662,7 +2672,11 @@ void Interpreter_run (Interpreter me, char32 *text) {
 		my running = false;
 		my stopped = false;
 	} catch (MelderError) {
-		if (lineNumber > 0) {
+		// if this was a Lua script, the line number is meaningless (the
+		// entire script was handed off to Lua), so trying to point to the
+		// line where the error happened won't work; the Lua error message
+		// takes care of that
+		if (lineNumber > 0 && !isLuaScript) {
 			bool normalExplicitExit = str32nequ (lines [lineNumber], U"exit ", 5) || Melder_hasError (U"Script exited.");
 			if (! normalExplicitExit && ! assertionFailed) {   // don't show the message twice!
 				while (lines [lineNumber] [0] == U'\0') {   // did this use to be a continuation line?
