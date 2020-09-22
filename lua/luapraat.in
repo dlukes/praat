@@ -26,9 +26,15 @@ static int luapraat_call_praat(lua_State *L) {
 	}
 
 	bool cmd_failed = false;
-	// TODO: what does the status tell us, what should we do with it?
+	bool no_silent_error;
+	// praat_executeCommand returns 0 if an error occurred and was
+	// silenced using nocheck, 1 otherwise. The 0 shouldn't happen too
+	// often, since when calling Praat from Lua, it's better to use Lua's
+	// exception handling facilities: instead of `_praat("nocheck X")`, do
+	// `pcall(praat.X)`.  But let's handle it the same way Interpreter.cpp
+	// does, for consistency's sake.
 	try {
-		int status = praat_executeCommand(*INTERPRETER, cmd.get());
+		no_silent_error = praat_executeCommand(*INTERPRETER, cmd.get());
 	} catch (MelderError) {
 		cmd_failed = true;
 	}
@@ -40,7 +46,7 @@ static int luapraat_call_praat(lua_State *L) {
 		return luaL_error(L, "Praat command failed: `%s`", cmd_c);
 	}
 
-	if (should_divert) {
+	if (should_divert && no_silent_error) {
 		if (output.string[0] == 1) {
 			// this is basically copy-pasted from Interpreter.cpp -> TODO: cleanup
 			int IOBJECT, selectedObject = 0, numberOfSelectedObjects = 0;
