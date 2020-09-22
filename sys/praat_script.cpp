@@ -203,7 +203,7 @@ int praat_executeCommand (Interpreter interpreter, char32 *command) {
 		if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
 			MelderInfo_open ();
 		}
-		MelderInfo_write (luapraat_run (command + 4, & interpreter).get());
+		MelderInfo_write (luapraat_run (command + 4, interpreter).get());
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);
 		if (command [0] == '.')

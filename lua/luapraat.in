@@ -4,7 +4,10 @@
 #include "luapraat.h"
 
 static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
-Interpreter *INTERPRETER;
+// NOTE: can't directly set to theInterpreter from Formula.cpp because
+// that's static
+static Interpreter INTERPRETER;
+static PraatObjects PRAAT_OBJECTS = theCurrentPraatObjects;
 
 static int luapraat_call_praat(lua_State *L) {
 	static MelderString output;
@@ -34,7 +37,7 @@ static int luapraat_call_praat(lua_State *L) {
 	// `pcall(praat.X)`.  But let's handle it the same way Interpreter.cpp
 	// does, for consistency's sake.
 	try {
-		no_silent_error = praat_executeCommand(*INTERPRETER, cmd.get());
+		no_silent_error = praat_executeCommand(INTERPRETER, cmd.get());
 	} catch (MelderError) {
 		cmd_failed = true;
 	}
@@ -48,15 +51,16 @@ static int luapraat_call_praat(lua_State *L) {
 
 	if (should_divert && no_silent_error) {
 		if (output.string[0] == 1) {
-			// this is basically copy-pasted from Interpreter.cpp -> TODO: cleanup
-			int IOBJECT, selectedObject = 0, numberOfSelectedObjects = 0;
-			WHERE (SELECTED) { selectedObject = IOBJECT; numberOfSelectedObjects += 1; }
-			if (numberOfSelectedObjects > 1) {
+			// this closely follows identical logic in Interpreter.cpp,
+			// including the same error messages
+			int IOBJECT, selected_obj = 0, total_selected = 0;
+			WHERE (SELECTED) { selected_obj = IOBJECT; total_selected += 1; }
+			if (total_selected > 1) {
 				return luaL_error(L, "Multiple objects selected. Cannot assign object ID to variable.");
-			} else if (numberOfSelectedObjects == 0) {
+			} else if (total_selected == 0) {
 				return luaL_error(L, "No objects selected. Cannot assign object ID to variable.");
 			} else {
-				lua_pushnumber(L, theCurrentPraatObjects->list[selectedObject].id);
+				lua_pushnumber(L, PRAAT_OBJECTS->list[selected_obj].id);
 			}
 		} else {
 			lua_pushstring(L, Melder_32to8(output.string).get());
@@ -67,15 +71,15 @@ static int luapraat_call_praat(lua_State *L) {
 	return 1;
 }
 
-autostring32 luapraat_run(const char32 *script_path, Interpreter *interpreter) {
+autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
 	lua_State *L = luaL_newstate();
 	luaL_openlibs(L);
 	lua_pushcfunction(L, luapraat_call_praat);
 	lua_setglobal(L, "_praat");
 	luaL_dostring(L, LUAPRAAT_LUALIB);
 	lua_setglobal(L, "praat");
-	// TODO: is there a cleaner way to pass the interpreter to the C/Lua
-	// interface function than via a global? This isn't re-entrant.
+	// TODO: is there maybe a cleaner way to pass the interpreter to the
+	// C/Lua interface function than via a global?
 	INTERPRETER = interpreter;
 
 	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
