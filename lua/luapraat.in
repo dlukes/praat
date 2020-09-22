@@ -72,7 +72,7 @@ static int luapraat_call_praat(lua_State *L) {
 	return 1;
 }
 
-autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
+static lua_State *luapraat_setup(Interpreter interpreter) {
 	// TODO: is there maybe a cleaner way to pass the interpreter to the
 	// C/Lua interface function than via a global?
 	INTERPRETER = interpreter;
@@ -88,13 +88,10 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
 	luaL_dostring(L, LUAPRAAT_LUALIB);
 	lua_setglobal(L, "praat");
 
-	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
-	int load_error = luaL_loadfile(L, script_path_fs);
-	if (load_error) {
-		// If something went wrong, error message is at the top of the stack
-		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
-	}
+	return L;
+}
 
+static autostring32 luapraat_do_run(lua_State *L) {
 	int call_error = lua_pcall(L, 0, LUA_MULTRET, 0);
 	if (call_error) {
 		Melder_throw(U"Error running Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
@@ -106,6 +103,19 @@ autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
 	lua_settop(L, 0);
 	lua_close(L);
 	return result;
+}
+
+autostring32 luapraat_run(const char32 *script_path, Interpreter interpreter) {
+	lua_State *L = luapraat_setup(interpreter);
+
+	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
+	int load_error = luaL_loadfile(L, script_path_fs);
+	if (load_error) {
+		// If something went wrong, error message is at the top of the stack
+		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
+	}
+
+	return luapraat_do_run(L);
 }
 
 // vi: ft=cpp:
