@@ -20,4 +20,4 @@ libluapraat.a: $(OBJECTS)
 %.o: *.h ../melder/*.h %.cpp
 
 luapraat.cpp: luapraat.in praat.lua
-	./include_str.py
+	python3 include_str.py
