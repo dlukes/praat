@@ -12,9 +12,36 @@ package.path = (
   package.path
 )
 
-function M.inspect(value)
-  -- TODO: a proper pretty printer
-  print(value)
+function M.print(...)
+  if select("#", ...) > 0 then
+    M.appendInfoLine(...)
+  else
+    -- without arguments, Praat would parse the command as a variable
+    M.appendInfoLine("")
+  end
+end
+
+function M.inspect(value, indent, tables_seen)
+  indent = indent or 2
+  tables_seen = tables_seen or {}
+  if type(value) == "table" and not tables_seen[value] then
+    tables_seen[value] = true
+    print("{")
+    for k, v in pairs(value) do
+      M.appendInfo(string.rep(" ", indent)..tostring(k).." = ")
+      M.inspect(v, indent + 2, tables_seen)
+      print()
+    end
+    indent = indent - 2
+    local close = indent > 0 and "}," or "}\n"
+    M.appendInfo(string.rep(" ", indent)..close)
+  else
+    local close = indent > 2 and "," or "\n"
+    -- unfortunately, can't figure out name if value is a function;
+    -- there's debug.getinfo, but that only works (somewhat) reliably
+    -- when invoked from inside a call to that function
+    M.appendInfo(tostring(value)..close)
+  end
 end
 
 -- Praat-like string-to-number conversion...
@@ -72,6 +99,6 @@ setmetatable(M, {
   end
 })
 
-print, _print = M.appendInfoLine, print
+print, _print = M.print, print
 
 return M
