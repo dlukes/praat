@@ -16,7 +16,12 @@ static int luapraat_praat_cmd(lua_State *L) {
 	const char *cmd_c = lua_tostring(L, 1);
 	autostring32 cmd = Melder_8to32(cmd_c);
 
-	bool should_divert = !str32nequ(cmd.get(), U"appendInfo", 10) && !str32nequ(cmd.get(), U"writeInfo", 9);
+	bool should_divert = !(
+		// obviously, if the user is trying to write to the info window, the
+		// output shouldn't be diverted
+		str32nequ(cmd.get(), U"appendInfo", 10)
+		|| str32nequ(cmd.get(), U"writeInfo", 9)
+	);
 	// TODO: create an API for this buffer switch back and forth, instead
 	// of directly meddling with _p_currentBuffer and _foregroundBuffer?
 	MelderString *orig_current_buffer = MelderInfo::_p_currentBuffer;
@@ -53,16 +58,20 @@ static int luapraat_praat_cmd(lua_State *L) {
 
 	if (should_divert && no_silent_error) {
 		if (output.string[0] == 1) {
-			// this closely follows identical logic in Interpreter.cpp,
-			// including the same error messages
-			int IOBJECT, selected_obj = 0, total_selected = 0;
-			WHERE (SELECTED) { selected_obj = IOBJECT; total_selected += 1; }
-			if (total_selected > 1) {
-				return luaL_error(L, "Multiple objects selected. Cannot assign object ID to variable.");
-			} else if (total_selected == 0) {
-				return luaL_error(L, "No objects selected. Cannot assign object ID to variable.");
-			} else {
-				lua_pushnumber(L, PRAAT_OBJECTS->list[selected_obj].id);
+			// output starts with special sentinel -> return a Lua array with
+			// the currently selected objects instead of it
+			lua_newtable(L);                                                   // A: array with all selected objects
+			lua_Integer j = 0;
+			for (int i = 1; i <= PRAAT_OBJECTS->n; i++) {
+				praat_Object obj = &PRAAT_OBJECTS->list[i];
+				if (obj->isSelected) {
+					lua_newtable(L);                                               // O: object being added to A
+					lua_pushnumber(L, obj->id);
+					lua_setfield(L, -2, "id");                                     // -2 is O
+					lua_pushstring(L, Melder_32to8(obj->name.get()).get());
+					lua_setfield(L, -2, "name");                                   // -2 is O
+					lua_rawseti(L, -2, ++j);                                       // -2 is A
+				}
 			}
 		} else {
 			lua_pushstring(L, Melder_32to8(output.string).get());

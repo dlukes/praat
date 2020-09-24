@@ -91,14 +91,63 @@ setmetatable(cmd_map, {
   end
 })
 
-local function serialize_array(array, lvl)
+local praat_obj_meta = {
+  __tostring = function(o)
+    return '"{ id = '..o.id..", name = "..o.name:gsub('"', '""')..' }"'
+  end,
+
+  __index = function(o, key)
+    if key == "__praat_object" then
+      return true
+    else
+      return function(self, ...)
+        -- this function is supposed to be called via the : syntactic
+        -- sugar; if self ~= o, then it was called with . and self is in
+        -- fact an argument meant for the Praat command; if Praat
+        -- doesn't get it, it might error out or silently compute a
+        -- different value, so better throw an error
+        if self ~= o then
+          error(string.format(
+            "Use the `:` operator to call commands on Praat objects: "..
+            "`obj:%s(...)`, not `obj.%s(...)`.", key, key
+          ))
+        end
+        M.select(o)
+        -- the key is a Praat command to run
+        local ans = M[key](...)
+        M.minus(o)
+        return ans
+      end
+    end
+  end,
+}
+
+local function praat_cmd(...)
+  local ans = _praat_cmd(...)
+  if type(ans) == "table" then
+    -- this means the Praat command returned an array of Praat objects;
+    -- let's set them up for comfortable use from within Lua
+    local total, last_obj
+    for i, obj in ipairs(ans) do
+      setmetatable(obj, praat_obj_meta)
+      total, last_obj = i, obj
+    end
+    -- if there's only one object, don't wrap it in an array, but do
+    -- return an empty array if there's none
+    return total == 1 and last_obj or ans
+  else
+    return ans
+  end
+end
+
+local function stringify_array(array, lvl)
   -- nesting level can be at most 2, corresponding to a Praat matrix
   lvl = lvl or 1
   local ans = "{"
   for i, v in ipairs(array) do
     local sep = i > 1 and "," or ""
     if type(v) == "table" and lvl < 2 then
-      ans = ans..sep..serialize_array(v, lvl + 1)
+      ans = ans..sep..stringify_array(v, lvl + 1)
     else
       ans = ans..sep..tostring(v)
     end
@@ -106,7 +155,7 @@ local function serialize_array(array, lvl)
   return ans.."}"
 end
 
-local function stringify_args(...)
+local function stringify_args(is_info, ...)
   local nargs = select("#", ...)
   local stringified = {}
   for i = 1, nargs do
@@ -121,7 +170,15 @@ local function stringify_args(...)
       arg = arg:gsub('"', '""'):gsub("\n", '", newline$, "')
       arg = '"'..arg..'"'
     elseif t == "table" then
-      arg = serialize_array(arg)
+      if arg.__praat_object then
+        if is_info then
+          arg = tostring(arg)
+        else
+          arg = arg.id
+        end
+      else
+        arg = stringify_array(arg)
+      end
     else
       error("Missing implementation for passing arguments of type "..t.." to Praat.")
     end
@@ -134,11 +191,12 @@ setmetatable(M, {
   -- dynamically generate calls to Praat commands
   __index = function(_, cmd)
     return function(...)
-      local args = stringify_args(...)
       cmd = cmd:gsub("_", " ")
       cmd = cmd_map[cmd]
+      local is_info = cmd:find("^writeInfo") or cmd:find("^appendInfo")
+      local args = stringify_args(is_info, ...)
       local cmd_and_args = #args > 0 and string.format("%s: %s", cmd, args) or cmd
-      return _praat_cmd(cmd_and_args)
+      return praat_cmd(cmd_and_args)
     end
   end,
 
@@ -146,11 +204,11 @@ setmetatable(M, {
   -- out in the same way as in a Praat script: `praat "Command: Arg1 Arg2"`
   __call = function(_, cmd_or_script)
     if cmd_or_script:find("\n") then
-      return _praat_script(cmd_or_script)
+      _praat_script(cmd_or_script)
     else
-      return _praat_cmd(cmd_or_script)
+      return praat_cmd(cmd_or_script)
     end
-  end
+  end,
 })
 
 
