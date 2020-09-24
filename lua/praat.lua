@@ -1,5 +1,8 @@
 local M = {}
 
+
+------------------------------ Allow loading modules from $PRAAT_DIR/lua
+
 local dir_sep = package.config:sub(1, 1)
 local pat_sep = package.config:sub(3, 3)
 local glob = package.config:sub(5, 5)
@@ -11,6 +14,29 @@ package.path = (
     ..pat_sep..
   package.path
 )
+
+
+------------------------------ Praat-like string-to-number conversion...
+
+local function praat_tonumber(val)
+  return type(val) == "string" and tonumber(string.match(val, "^(%S+)%s")) or val
+end
+
+-- ... performed automatically when doing arithmetic on strings (Lua
+-- already has string-to-number autoconversion, but it's too strict, it
+-- doesn't allow trailing garbage)
+local string_meta = getmetatable("")
+function string_meta.__add(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__sub(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__mul(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__div(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__mod(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__pow(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__unm(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__idiv(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+
+
+--------------------------------------------- Printing & pretty-printing
 
 function M.print(...)
   if select("#", ...) > 0 then
@@ -44,23 +70,41 @@ function M.inspect(value, indent, tables_seen)
   end
 end
 
--- Praat-like string-to-number conversion...
-local function praat_tonumber(val)
-  return type(val) == "string" and tonumber(string.match(val, "^(%S+)%s")) or val
-end
+-- remap global print to write to the Praat info window
+print, _print = M.print, print
 
--- ... performed automatically when doing arithmetic on strings (Lua
--- already has string-to-number autoconversion, but it's too strict, it
--- doesn't allow trailing garbage)
-local string_meta = getmetatable("")
-function string_meta.__add(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__sub(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__mul(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__div(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__mod(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__pow(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__unm(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__idiv(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+
+------------------------------------------------ Praat command execution
+
+-- TODO: any other legacy commands that should be remapped?
+local cmd_map = {
+  echo = "writeInfoLine",
+  printline = "writeInfoLine",
+  select = "selectObject",
+  plus = "plusObject",
+  minus = "minusObject",
+}
+
+setmetatable(cmd_map, {
+  __index = function(_, cmd)
+    return cmd
+  end
+})
+
+local function serialize_array(array, lvl)
+  -- nesting level can be at most 2, corresponding to a Praat matrix
+  lvl = lvl or 1
+  local ans = "{"
+  for i, v in ipairs(array) do
+    local sep = i > 1 and "," or ""
+    if type(v) == "table" and lvl < 2 then
+      ans = ans..sep..serialize_array(v, lvl + 1)
+    else
+      ans = ans..sep..tostring(v)
+    end
+  end
+  return ans.."}"
+end
 
 local function stringify_args(...)
   local nargs = select("#", ...)
@@ -76,6 +120,8 @@ local function stringify_args(...)
     elseif t == "string" then
       arg = arg:gsub('"', '""'):gsub("\n", '", newline$, "')
       arg = '"'..arg..'"'
+    elseif t == "table" then
+      arg = serialize_array(arg)
     else
       error("Missing implementation for passing arguments of type "..t.." to Praat.")
     end
@@ -90,15 +136,20 @@ setmetatable(M, {
     return function(...)
       local args = stringify_args(...)
       cmd = cmd:gsub("_", " ")
-      -- TODO: any other important commands that don't separate
-      -- arguments with a colon?
-      local sep = cmd == "select" and "" or ":"
-      local cmd_and_args = #args > 0 and string.format("%s%s %s", cmd, sep, args) or cmd
+      cmd = cmd_map[cmd]
+      local cmd_and_args = #args > 0 and string.format("%s: %s", cmd, args) or cmd
       return _praat(cmd_and_args)
     end
+  end,
+
+  -- allow alternate syntax for calling Praat commands which writes them
+  -- out in the same way as in a Praat script: `praat "Command: Arg1 Arg2"`
+  __call = function(_, cmd_and_args)
+    return _praat(cmd_and_args)
   end
 })
 
-print, _print = M.print, print
+
+------------------------------------------------------------------------
 
 return M

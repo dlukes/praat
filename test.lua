@@ -17,3 +17,9 @@ local t = {}
 t[t] = 1
 t[2] = t
 praat.inspect(t)
+
+praat 'appendInfoLine: "Pass any command to Praat directly as a string."'
+
+-- serializing arrays to Praat vector and matrix literals
+print({1, 2, 3})
+print({{1, 2}, {3, 4}})
