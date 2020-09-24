@@ -138,14 +138,18 @@ setmetatable(M, {
       cmd = cmd:gsub("_", " ")
       cmd = cmd_map[cmd]
       local cmd_and_args = #args > 0 and string.format("%s: %s", cmd, args) or cmd
-      return _praat(cmd_and_args)
+      return _praat_cmd(cmd_and_args)
     end
   end,
 
   -- allow alternate syntax for calling Praat commands which writes them
   -- out in the same way as in a Praat script: `praat "Command: Arg1 Arg2"`
-  __call = function(_, cmd_and_args)
-    return _praat(cmd_and_args)
+  __call = function(_, cmd_or_script)
+    if cmd_or_script:find("\n") then
+      return _praat_script(cmd_or_script)
+    else
+      return _praat_cmd(cmd_or_script)
+    end
   end
 })
 

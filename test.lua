@@ -23,3 +23,12 @@ praat 'appendInfoLine: "Pass any command to Praat directly as a string."'
 -- serializing arrays to Praat vector and matrix literals
 print({1, 2, 3})
 print({{1, 2}, {3, 4}})
+
+praat [[
+form Sink it
+  sentence Name_of_the_ship Titanic
+  real Distance_to_the_iceberg_(m) 500.0
+  natural Number_of_people 1800
+  natural Number_of_boats 10
+endform
+]]

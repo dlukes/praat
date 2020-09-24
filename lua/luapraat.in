@@ -10,7 +10,8 @@ static PraatObjects PRAAT_OBJECTS = theCurrentPraatObjects;
 extern structMelderDir praatDir;
 static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
 
-static int luapraat_call_praat(lua_State *L) {
+// Run a single Praat command and return the value it yields.
+static int luapraat_praat_cmd(lua_State *L) {
 	static MelderString output;
 	const char *cmd_c = lua_tostring(L, 1);
 	autostring32 cmd = Melder_8to32(cmd_c);
@@ -72,6 +73,18 @@ static int luapraat_call_praat(lua_State *L) {
 	return 1;
 }
 
+// Run a (multi-line) Praat script, purely for its side effects.
+static int luapraat_praat_script(lua_State *L) {
+	const char *script_c = lua_tostring(L, 1);
+	autostring32 script = Melder_8to32(script_c);
+	try {
+		Interpreter_run(INTERPRETER, script.get());
+	} catch (MelderError) {
+		return luaL_error(L, "Praat script failed: `%s`", script_c);
+	}
+	return 0;
+}
+
 static lua_State *luapraat_setup(Interpreter interpreter) {
 	// TODO: is there maybe a cleaner way to pass the interpreter to the
 	// C/Lua interface function than via a global?
@@ -93,8 +106,10 @@ static lua_State *luapraat_setup(Interpreter interpreter) {
 	lua_pushstring(L, Melder_peek32to8_fileSystem(Melder_dirToPath(&praatDir)));
 	lua_setglobal(L, "PRAAT_DIR");
 
-	lua_pushcfunction(L, luapraat_call_praat);
-	lua_setglobal(L, "_praat");
+	lua_pushcfunction(L, luapraat_praat_cmd);
+	lua_setglobal(L, "_praat_cmd");
+	lua_pushcfunction(L, luapraat_praat_script);
+	lua_setglobal(L, "_praat_script");
 
 	luaL_dostring(L, LUAPRAAT_LUALIB);
 	lua_setglobal(L, "praat");
