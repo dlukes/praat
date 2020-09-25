@@ -109,6 +109,9 @@ static lua_State *luapraat_setup(Interpreter interpreter) {
 		MelderInfo_open ();
 	}
 
+	// TODO: create a C++ wrapper for lua_State which will be moved
+	// between functions and have a destructor which clears the stack and
+	// calls lua_close?
 	lua_State *L = luaL_newstate();
 	luaL_openlibs(L);
 
@@ -123,22 +126,37 @@ static lua_State *luapraat_setup(Interpreter interpreter) {
 	luaL_dostring(L, LUAPRAAT_LUALIB);
 	lua_setglobal(L, "praat");
 
+	// prepare a traceback error handler to hook up with the last arg to
+	// pcall in luapraat_do_run
+	lua_getglobal(L, "debug");
+	lua_getfield(L, -1, "traceback");
+	lua_remove(L, -2);
+
 	return L;
 }
 
 static void luapraat_do_run(lua_State *L, int load_error) {
 	if (load_error) {
-		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
+		autostring32 msg = Melder_8to32(lua_tostring(L, -1));
+		lua_settop(L, 0);
+		lua_close(L);
+		Melder_throw(U"Error loading Lua script ", msg.get());
 	}
 
-	int call_error = lua_pcall(L, 0, LUA_MULTRET, 0);
+	// at this point, the chunk to call should be at the top of the stack,
+	// and the traceback error handler just below it, hence the final -2
+	int call_error = lua_pcall(L, 0, LUA_MULTRET, -2);
 	if (call_error) {
-		Melder_throw(U"Error running Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
+		autostring32 msg = Melder_8to32(lua_tostring(L, -1));
+		lua_settop(L, 0);
+		lua_close(L);
+		Melder_throw(U"Error running Lua script ", msg.get());
 	}
 
+	// If the chunk returns anything, this is how Praat will receive it if
+	// called from Praat script as `x = Lua ...`, via diverted info output.
 	// NOTE: The conversion assumes UTF-8 output from Lua.
 	MelderInfo_write(Melder_8to32(lua_tostring(L, -1)).get());
-	// Melder_casual(U"number of elements left on stack: ", lua_gettop(L));
 	lua_settop(L, 0);
 	lua_close(L);
 }
