@@ -52,15 +52,17 @@ function M.inspect(value, indent, tables_seen)
   tables_seen = tables_seen or {}
   if type(value) == "table" and not tables_seen[value] then
     tables_seen[value] = true
-    print("{")
+    M.appendInfo("{")
+    local was_empty = true
     for k, v in pairs(value) do
-      M.appendInfo(string.rep(" ", indent)..tostring(k).." = ")
+      M.appendInfo("\n"..string.rep(" ", indent)..tostring(k).." = ")
       M.inspect(v, indent + 2, tables_seen)
-      print()
+      was_empty = false
     end
     indent = indent - 2
+    local nl = was_empty and "" or "\n"
     local close = indent > 0 and "}," or "}\n"
-    M.appendInfo(string.rep(" ", indent)..close)
+    M.appendInfo(nl..string.rep(" ", indent)..close)
   else
     local close = indent > 2 and "," or "\n"
     -- unfortunately, can't figure out name if value is a function;
