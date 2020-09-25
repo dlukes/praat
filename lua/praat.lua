@@ -76,6 +76,81 @@ end
 print, _print = M.print, print
 
 
+------------------------------ Praat object wrappers & utility functions
+
+local praat_obj_meta = {
+  __tostring = function(obj)
+    return "{ id = "..obj.id..", name = "..obj.name:gsub('"', '""').." }"
+  end,
+
+  __index = function(obj, key)
+    if key == "__praat_object" then
+      return true
+    else
+      return function(self, ...)
+        -- this function is supposed to be called via the : syntactic
+        -- sugar; if self ~= o, then it was called with . and self is in
+        -- fact an argument meant for the Praat command; if Praat
+        -- doesn't get it, it might error out or silently compute a
+        -- different value, so better throw an error
+        if self ~= obj then
+          error(string.format(
+            "Use the `:` operator to call commands on Praat objects: "..
+            "`obj:%s(...)`, not `obj.%s(...)`.", key, key
+          ))
+        end
+        M.select(obj)
+        -- the key is a Praat command to run
+        local ans = M[key](...)
+        -- don't worry about cleaning up by deselecting with minus, the
+        -- command might have removed the objects for all you know
+        return ans
+      end
+    end
+  end,
+}
+
+local praat_obj_group_meta = {
+  -- no custom __tostring needed, it's handled by stringify_array and
+  -- only the IDs are printed, which is less noisy in case there are
+  -- many objects
+
+  __index = function(group, key)
+    if key == "__praat_object" then
+      -- without this, looking up __praat_object will return the
+      -- function below, which is truthy, which confuses stringify_args
+      return false
+    else
+      -- NOTE: The same comments apply as in the analogous function in
+      -- praat_obj_meta above.
+      return function(self, ...)
+        if self ~= group then
+          error(string.format(
+            "Use the `:` operator to call commands on Praat object groups: "..
+            "`group:%s(...)`, not `group.%s(...)`.", key, key
+          ))
+        end
+        for i, o in ipairs(group) do
+          if i == 1 then
+            M.select(o)
+          else
+            M.plus(o)
+          end
+        end
+        local ans = M[key](...)
+        return ans
+      end
+    end
+  end,
+}
+
+function M.group(...)
+  local group = {...}
+  setmetatable(group, praat_obj_group_meta)
+  return group
+end
+
+
 ------------------------------------------------ Praat command execution
 
 -- TODO: any other legacy commands that should be remapped?
@@ -92,37 +167,6 @@ setmetatable(cmd_map, {
     return cmd
   end
 })
-
-local praat_obj_meta = {
-  __tostring = function(o)
-    return '"{ id = '..o.id..", name = "..o.name:gsub('"', '""')..' }"'
-  end,
-
-  __index = function(o, key)
-    if key == "__praat_object" then
-      return true
-    else
-      return function(self, ...)
-        -- this function is supposed to be called via the : syntactic
-        -- sugar; if self ~= o, then it was called with . and self is in
-        -- fact an argument meant for the Praat command; if Praat
-        -- doesn't get it, it might error out or silently compute a
-        -- different value, so better throw an error
-        if self ~= o then
-          error(string.format(
-            "Use the `:` operator to call commands on Praat objects: "..
-            "`obj:%s(...)`, not `obj.%s(...)`.", key, key
-          ))
-        end
-        M.select(o)
-        -- the key is a Praat command to run
-        local ans = M[key](...)
-        M.minus(o)
-        return ans
-      end
-    end
-  end,
-}
 
 local function praat_cmd(...)
   local ans = _praat_cmd(...)
@@ -148,7 +192,10 @@ local function stringify_array(array, lvl)
   local ans = "{"
   for i, v in ipairs(array) do
     local sep = i > 1 and "," or ""
-    if type(v) == "table" and lvl < 2 then
+    local t = type(v)
+    if t == "table" and v.__praat_object then
+      ans = ans..sep..v.id
+    elseif t == "table" and lvl < 2 then
       ans = ans..sep..stringify_array(v, lvl + 1)
     else
       ans = ans..sep..tostring(v)
@@ -174,7 +221,7 @@ local function stringify_args(is_info, ...)
     elseif t == "table" then
       if arg.__praat_object then
         if is_info then
-          arg = tostring(arg)
+          arg = '"'..tostring(arg)..'"'
         else
           arg = arg.id
         end

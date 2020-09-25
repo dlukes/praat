@@ -9,20 +9,31 @@ print("nearest zero crossing + 2: ", zc + 2)
 
 -- select/plus/minus return the currently selected objects
 local selected = praat.plus(iris)
-praat.appendInfo("Currently selected objects: ")
+praat.appendInfo("currently selected object(s): ")
 praat.inspect(selected)
 selected = praat.minus(sine)
 -- special case: when there's only one, it's not wrapped in an array
-praat.appendInfo("Currently selected objects: ")
+praat.appendInfo("currently selected object(s): ")
 praat.inspect(selected)
+print("Praat objects also have a __tostring for convenience: ", selected)
 selected = praat.minus(iris)
-praat.appendInfo("Currently selected objects: ")
+praat.appendInfo("currently selected object(s): ")
 praat.inspect(selected)
 
 -- there's also pseudo-OO sugar for calling commands as "methods" on
 -- Praat objects
 zc = sine:Get_nearest_zero_crossing(1, 0)
 print("nearest zero crossing OO: ", zc)
+
+-- as well as a way of creating groups of objects and calling commands
+-- on those
+local group = praat.group(sine, iris)
+print("IDs of objects in the group (Praat sees them as a vector): ", group)
+praat.appendInfo("inspect group: ")
+praat.inspect(group)
+group:Remove()
+-- the group can also be passed to commands which accept a vector of IDs
+-- as one of their arguments; TODO an example of that?
 
 praat.inspect({1, 2, 3})
 praat.inspect("foo")
