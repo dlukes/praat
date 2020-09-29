@@ -1,7 +1,15 @@
+#include "luapraat.h"
+
 #include "melder.h"
+#include "Interpreter.h"
 #include "praat_script.h"
 #include "praatP.h"
-#include "luapraat.h"
+
+extern "C" {
+	#include <lua.h>
+	#include <lualib.h>
+	#include <lauxlib.h>
+}
 
 // NOTE: can't directly set to theInterpreter from Formula.cpp because
 // that's static
