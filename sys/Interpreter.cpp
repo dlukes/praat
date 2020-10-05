@@ -26,7 +26,7 @@ extern structMelderDir praatDir;
 #include "Formula.h"
 #include "praat_version.h"
 #include "../kar/UnicodeData.h"
-#include "luapraat.h"
+#include "LuaPraat.h"
 
 #include "../fon/Vector.h"
 
@@ -1502,7 +1502,8 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							text [i] = U'\n';
 						}
 					}
-					luapraat_run_chunk (text, me);
+					LuaPraat lp {me};
+					lp.run_chunk (text);
 					Interpreter_stop (me);
 					continue;
 				}

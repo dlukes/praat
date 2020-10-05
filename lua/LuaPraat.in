@@ -1,4 +1,4 @@
-#include "luapraat.h"
+#include "LuaPraat.h"
 
 #include "melder.h"
 #include "Interpreter.h"
@@ -17,24 +17,6 @@ static Interpreter INTERPRETER;
 static PraatObjects PRAAT_OBJECTS = theCurrentPraatObjects;
 extern structMelderDir praatDir;
 static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
-
-class LuaState {
-	public:
-		lua_State *L;
-
-		LuaState() {
-			L = luaL_newstate();
-		}
-
-		~LuaState() {
-			lua_settop(L, 0);
-			lua_close(L);
-		}
-
-		// disable copying
-		LuaState(const LuaState&);
-		LuaState& operator=(const LuaState&);
-};
 
 // Run a single Praat command and return the value it yields.
 static int luapraat_praat_cmd(lua_State *L) {
@@ -120,47 +102,12 @@ static int luapraat_praat_script(lua_State *L) {
 	return 0;
 }
 
-static LuaState luapraat_setup(Interpreter interpreter) {
-	// TODO: is there maybe a cleaner way to pass the interpreter to the
-	// C/Lua interface function than via a global?
-	INTERPRETER = interpreter;
-	// If info output is currently redirected to a string (from which
-	// we'll later read the result of the Lua script), reset the string
-	// so as to clear out the sentinel value placed there to check
-	// whether the command generated output. If the output is *not*
-	// redirected, we don't want to force-clear the Info window, so
-	// leave it alone. This is the difference between "x = Lua ..." vs.
-	// "Lua ..." in the Praat script.
-	if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
-		MelderInfo_open ();
-	}
-
-	LuaState ls;
-	lua_State *L = ls.L;
-	luaL_openlibs(L);
-
-	lua_pushstring(L, Melder_peek32to8_fileSystem(Melder_dirToPath(&praatDir)));
-	lua_setglobal(L, "PRAAT_DIR");
-
-	lua_pushcfunction(L, luapraat_praat_cmd);
-	lua_setglobal(L, "_praat_cmd");
-	lua_pushcfunction(L, luapraat_praat_script);
-	lua_setglobal(L, "_praat_script");
-
-	luaL_dostring(L, LUAPRAAT_LUALIB);
-	lua_setglobal(L, "praat");
-
-	// prepare a traceback error handler to hook up with the last arg to
-	// pcall in luapraat_do_run
-	lua_getglobal(L, "debug");
-	lua_getfield(L, -1, "traceback");
-	lua_remove(L, -2);
-
-	return ls;
+void LuaPraat::cleanup() {
+	lua_settop(L, 0);
+	lua_close(L);
 }
 
-static void luapraat_do_run(LuaState *ls, int load_error) {
-	lua_State *L = ls->L;
+void LuaPraat::do_run(int load_error) {
 	if (load_error) {
 		Melder_throw(U"Error loading Lua script ", Melder_8to32(lua_tostring(L, -1)).get());
 	}
@@ -178,15 +125,68 @@ static void luapraat_do_run(LuaState *ls, int load_error) {
 	MelderInfo_write(Melder_8to32(lua_tostring(L, -1)).get());
 }
 
-void luapraat_run_file(const char32 *script_path, Interpreter interpreter) {
-	LuaState ls = luapraat_setup(interpreter);
-	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
-	luapraat_do_run(&ls, luaL_loadfile(ls.L, script_path_fs));
+LuaPraat::LuaPraat(Interpreter interpreter) {
+	// TODO: is there maybe a cleaner way to pass the interpreter to the
+	// C/Lua interface functions above than via a global? Note they need
+	// to be standalone functions, so it can't just be a member variable.
+	// Maybe via the Lua stack somehow?
+	INTERPRETER = interpreter;
+	// If info output is currently redirected to a string (from which
+	// we'll later read the result of the Lua script), reset the string
+	// so as to clear out the sentinel value placed there to check
+	// whether the command generated output. If the output is *not*
+	// redirected, we don't want to force-clear the Info window, so
+	// leave it alone. This is the difference between "x = Lua ..." vs.
+	// "Lua ..." in the Praat script.
+	if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
+		MelderInfo_open ();
+	}
+
+	L = luaL_newstate();
+	luaL_openlibs(L);
+
+	lua_pushstring(L, Melder_peek32to8_fileSystem(Melder_dirToPath(&praatDir)));
+	lua_setglobal(L, "PRAAT_DIR");
+
+	lua_pushcfunction(L, luapraat_praat_cmd);
+	lua_setglobal(L, "_praat_cmd");
+	lua_pushcfunction(L, luapraat_praat_script);
+	lua_setglobal(L, "_praat_script");
+
+	luaL_dostring(L, LUAPRAAT_LUALIB);
+	lua_setglobal(L, "praat");
+
+	// prepare a traceback error handler to hook up with the last arg to
+	// pcall in do_run
+	lua_getglobal(L, "debug");
+	lua_getfield(L, -1, "traceback");
+	lua_remove(L, -2);
 }
 
-void luapraat_run_chunk(const char32 *chunk, Interpreter interpreter) {
-	LuaState ls = luapraat_setup(interpreter);
-	luapraat_do_run(&ls, luaL_loadstring(ls.L, Melder_32to8(chunk).get()));
+LuaPraat::~LuaPraat() {
+	cleanup();
+}
+
+LuaPraat::LuaPraat(LuaPraat&& other) noexcept : L{other.L} {
+	other.L = nullptr;
+}
+
+LuaPraat& LuaPraat::operator=(LuaPraat&& other) noexcept {
+	if (&other != this) {
+		cleanup();
+		L = other.L;
+		other.L = nullptr;
+	}
+	return *this;
+}
+
+void LuaPraat::run_file(const char32 *script_path) {
+	const char *script_path_fs = Melder_peek32to8_fileSystem(script_path);
+	do_run(luaL_loadfile(L, script_path_fs));
+}
+
+void LuaPraat::run_chunk(const char32 *chunk) {
+	do_run(luaL_loadstring(L, Melder_32to8(chunk).get()));
 }
 
 // vi: ft=cpp:

@@ -25,7 +25,7 @@
 #include "sendsocket.h"
 #include "UiPause.h"
 #include "DemoEditor.h"
-#include "luapraat.h"
+#include "LuaPraat.h"
 
 static int praat_findObjectFromString (Interpreter interpreter, conststring32 string) {
 	try {
@@ -193,7 +193,8 @@ int praat_executeCommand (Interpreter interpreter, char32 *command) {
 	if (command [0] == U'\0' || command [0] == U'#' || command [0] == U'!' || command [0] == U';')
 		/* Skip empty lines and comments. */;
 	else if (str32nequ (command, U"Lua ", 4)) {
-		luapraat_run_file (command + 4, interpreter);
+		LuaPraat lp {interpreter};
+		lp.run_file (command + 4);
 	} else if ((command [0] == U'.' || command [0] == U'+' || command [0] == U'-') && Melder_isAsciiUpperCaseLetter (command [1])) {   // selection?
 		int IOBJECT = praat_findObjectFromString (interpreter, command + 1);
 		if (command [0] == '.')

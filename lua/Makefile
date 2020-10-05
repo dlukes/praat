@@ -1,23 +1,23 @@
 include ../makefile.defs
 
 CPPFLAGS = -I../melder -I../sys -I/usr/include/luajit-2.0
-OBJECTS = luapraat.o
+OBJECTS = LuaPraat.o
 
 .PHONY: all clean
 
-all: libluapraat.a
+all: libLuaPraat.a
 
 clean:
 	$(RM) $(OBJECTS)
-	$(RM) libluapraat.a
+	$(RM) libLuaPraat.a
 
-libluapraat.a: $(OBJECTS)
-	touch libluapraat.a
-	rm libluapraat.a
-	$(AR) cq libluapraat.a $(OBJECTS)
-	$(RANLIB) libluapraat.a
+libLuaPraat.a: $(OBJECTS)
+	touch libLuaPraat.a
+	rm libLuaPraat.a
+	$(AR) cq libLuaPraat.a $(OBJECTS)
+	$(RANLIB) libLuaPraat.a
 
-%.o: *.h ../melder/*.h %.cpp
+%.o: *.h ../melder/*.h ../sys/*.h %.cpp
 
-luapraat.cpp: luapraat.in praat.lua
+LuaPraat.cpp: LuaPraat.in praat.lua
 	python3 include_str.py
