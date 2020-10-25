@@ -3,9 +3,7 @@
 
 #include "Interpreter.h"
 
-extern "C" {
-	#include <lua.h>
-}
+#include <lua.hpp>
 
 class LuaPraat {
 private:

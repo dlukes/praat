@@ -12,7 +12,7 @@ include makefile.defs
 .PHONY: all clean install
 
 # Makes the Praat executable in the source directory.
-all:
+all: LuaJIT
 	$(MAKE) -C external/clapack
 	$(MAKE) -C external/gsl
 	$(MAKE) -C external/glpk
@@ -33,6 +33,8 @@ all:
 	$(MAKE) -C gram
 	$(MAKE) -C FFNet
 	$(MAKE) -C artsynth
+	$(MAKE) -C LuaJIT amalg
+	$(MAKE) -C LuaJIT install PREFIX=$(PWD)/LuaJIT
 	$(MAKE) -C main main_Praat.o $(ICON)
 	$(LINK) -o $(EXECUTABLE) main/main_Praat.o $(MAIN_ICON) fon/libfon.a \
 		artsynth/libartsynth.a FFNet/libFFNet.a \
@@ -49,6 +51,12 @@ all:
 		lua/libLuaPraat.a \
 		$(LIBS)
 
+LuaJIT:
+	curl --proto '=https' --tlsv1.2 -sSfLO https://luajit.org/download/LuaJIT-2.1.0-beta3.tar.gz
+	tar xvzf LuaJIT-2.1.0-beta3.tar.gz
+	rm LuaJIT-2.1.0-beta3.tar.gz
+	mv LuaJIT-2.1.0-beta3 LuaJIT
+
 clean:
 	$(MAKE) -C external/clapack clean
 	$(MAKE) -C external/gsl clean
@@ -59,6 +67,7 @@ clean:
 	$(MAKE) -C external/espeak clean
 	$(MAKE) -C kar clean
 	$(MAKE) -C melder clean
+	$(MAKE) -C lua clean
 	$(MAKE) -C sys clean
 	$(MAKE) -C dwsys clean
 	$(MAKE) -C stat clean
@@ -69,6 +78,7 @@ clean:
 	$(MAKE) -C gram clean
 	$(MAKE) -C FFNet clean
 	$(MAKE) -C artsynth clean
+	$(MAKE) -C LuaJIT clean
 	$(MAKE) -C main clean
 	$(RM) praat
 

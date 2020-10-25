@@ -34,4 +34,7 @@ praat_nogui
 .Rhistory
 
 # generated files
-lua/luapraat.cpp
+lua/LuaPraat.cpp
+
+# external dependencies
+LuaJIT
