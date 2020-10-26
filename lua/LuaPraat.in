@@ -14,6 +14,10 @@ static PraatObjects PRAAT_OBJECTS = theCurrentPraatObjects;
 extern structMelderDir praatDir;
 static const char *LUAPRAAT_LUALIB = R"(include_str!("praat.lua");)";
 
+// ---------------------------------------------------------------------
+// Lua C functions
+// ---------------------------------------------------------------------
+
 // Run a single Praat command and return the value it yields.
 static int luapraat_praat_cmd(lua_State *L) {
 	static MelderString output;
@@ -98,6 +102,60 @@ static int luapraat_praat_script(lua_State *L) {
 	return 0;
 }
 
+enum class PraatVarType {
+	String,
+	Numeric,
+	Vector,
+	Matrix,
+};
+
+// Get the value of a Praat variable.
+static int luapraat_get_praat_var(lua_State *L) {
+	const char *var_name_c = lua_tostring(L, 1);
+	autostring32 var_name = Melder_8to32(var_name_c);
+	integer end = str32len(var_name.get()) - 1;
+	PraatVarType var_type;
+	switch (var_name[end]) {
+		case U'$':
+			var_type = PraatVarType::String;
+			break;
+		case U'#':
+			if (var_name[end - 1] == U'#') {
+				var_type = PraatVarType::Matrix;
+			} else {
+				var_type = PraatVarType::Vector;
+			}
+			break;
+		default:
+			var_type = PraatVarType::Numeric;
+			break;
+	}
+
+	InterpreterVariable var = Interpreter_hasVariable(INTERPRETER, var_name.get());
+	if (var == nullptr) {
+		lua_pushnil(L);
+	} else {
+		switch (var_type) {
+			case PraatVarType::String:
+				lua_pushstring(L, Melder_32to8(var->stringValue.get()).get());
+				break;
+			case PraatVarType::Numeric:
+				lua_pushnumber(L, var->numericValue);
+				break;
+			default:
+				// TODO: implement access to vectors and matrices as well? Maybe
+				// just to their individual elements?
+				return luaL_error(L, "Accessing Praat vectors and matrices from Lua not implemented.");
+				break;
+		}
+	}
+	return 1;
+}
+
+// ---------------------------------------------------------------------
+// class LuaPraat -- private methods
+// ---------------------------------------------------------------------
+
 void LuaPraat::cleanup() {
 	lua_settop(L, 0);
 	lua_close(L);
@@ -120,6 +178,10 @@ void LuaPraat::do_run(int load_error) {
 	// NOTE: The conversion assumes UTF-8 output from Lua.
 	MelderInfo_write(Melder_8to32(lua_tostring(L, -1)).get());
 }
+
+// ---------------------------------------------------------------------
+// class LuaPraat -- public interface
+// ---------------------------------------------------------------------
 
 LuaPraat::LuaPraat(Interpreter interpreter) {
 	// TODO: is there maybe a cleaner way to pass the interpreter to the
@@ -148,6 +210,8 @@ LuaPraat::LuaPraat(Interpreter interpreter) {
 	lua_setglobal(L, "_praat_cmd");
 	lua_pushcfunction(L, luapraat_praat_script);
 	lua_setglobal(L, "_praat_script");
+	lua_pushcfunction(L, luapraat_get_praat_var);
+	lua_setglobal(L, "_get_praat_var");
 
 	luaL_dostring(L, LUAPRAAT_LUALIB);
 	lua_setglobal(L, "praat");

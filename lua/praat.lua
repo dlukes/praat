@@ -210,11 +210,12 @@ local function stringify_args(is_info, ...)
   for i = 1, nargs do
     local arg = select(i, ...)
     local t = type(arg)
-    if t == "number" then
+    -- the second check detects NaN's
+    if t == "nil" or arg ~= arg then
+      arg = "undefined"
+    elseif t == "number" then
     elseif t == "boolean" then
       arg = arg and 1 or 0
-    elseif t == "nil" then
-      arg = "undefined"
     elseif t == "string" then
       arg = arg:gsub('"', '""'):gsub("\n", '", newline$, "')
       arg = '"'..arg..'"'
@@ -249,13 +250,18 @@ setmetatable(M, {
     end
   end,
 
-  -- allow alternate syntax for calling Praat commands which writes them
+  -- allow alternate syntax for evaluating Praat snippets which writes them
   -- out in the same way as in a Praat script: `praat "Command: Arg1 Arg2"`
-  __call = function(_, cmd_or_script)
-    if cmd_or_script:find("\n") then
-      _praat_script(cmd_or_script)
+  __call = function(_, snippet)
+    if snippet:find("^%s*[%w_]+[$#]?#?%s*$") then
+      -- snippet is a variable name
+      return _get_praat_var(snippet)
+    elseif snippet:find("\n") or snippet:find("%s*%S+%s*=") then
+      -- a (series of) statement(s) which only runs for side effects
+      _praat_script(snippet)
     else
-      return praat_cmd(cmd_or_script)
+      -- an expression (command) which returns a useful value
+      return praat_cmd(snippet)
     end
   end,
 })
