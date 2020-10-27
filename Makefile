@@ -33,7 +33,7 @@ all: LuaJIT
 	$(MAKE) -C gram
 	$(MAKE) -C FFNet
 	$(MAKE) -C artsynth
-	$(MAKE) -C LuaJIT amalg
+	$(MAKE) -C LuaJIT amalg CFLAGS=-DLUAJIT_ENABLE_LUA52COMPAT
 	$(MAKE) -C LuaJIT install PREFIX=$(PWD)/LuaJIT
 	$(MAKE) -C main main_Praat.o $(ICON)
 	$(LINK) -o $(EXECUTABLE) main/main_Praat.o $(MAIN_ICON) fon/libfon.a \

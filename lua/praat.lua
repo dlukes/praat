@@ -27,13 +27,12 @@ end
 -- doesn't allow trailing garbage)
 local string_meta = getmetatable("")
 function string_meta.__add(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__sub(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__mul(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__div(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__mod(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__pow(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__unm(a, b) return praat_tonumber(a) + praat_tonumber(b) end
-function string_meta.__idiv(a, b) return praat_tonumber(a) + praat_tonumber(b) end
+function string_meta.__sub(a, b) return praat_tonumber(a) - praat_tonumber(b) end
+function string_meta.__mul(a, b) return praat_tonumber(a) * praat_tonumber(b) end
+function string_meta.__div(a, b) return praat_tonumber(a) / praat_tonumber(b) end
+function string_meta.__mod(a, b) return praat_tonumber(a) % praat_tonumber(b) end
+function string_meta.__pow(a, b) return praat_tonumber(a)^praat_tonumber(b) end
+function string_meta.__unm(a) return -praat_tonumber(a) end
 
 
 --------------------------------------------- Printing & pretty-printing
@@ -82,6 +81,11 @@ local praat_obj_meta = {
   __tostring = function(obj)
     return "{ id = "..obj.id..", name = "..obj.name:gsub('"', '""').." }"
   end,
+
+  -- for consistency, Praat objects pretend to the # operator that
+  -- they're a one-element array of Praat objects (cf. the praat_cmd
+  -- function for a detailed explanation why)
+  __len = function() return 1 end,
 
   __index = function(obj, key)
     if key == "__praat_object" then
@@ -178,12 +182,19 @@ local function praat_cmd(...)
       setmetatable(obj, praat_obj_meta)
       total, last_obj = i, obj
     end
-    -- if there's only one object, don't wrap it in an array, but do
-    -- return an empty array if there's none
-    return total == 1 and last_obj or ans
-  else
-    return ans
+    if total == 1 then
+      -- If there's only one object, return it directly instead of
+      -- wrapping it in an array. This is somewhat unfortunate /
+      -- inconsistent from the perspective of select / minus / plus
+      -- commands, but needed because we want commands that create an
+      -- object to return that object, and not a one-element array. The
+      -- inconsistency is somewhat mitigated by praat_obj_meta having a
+      -- __len metamethod which returns 1, i.e.  they sort of pretend
+      -- like they're a one-element array.
+      ans = last_obj
+    end
   end
+  return ans
 end
 
 local function stringify_array(array, lvl)

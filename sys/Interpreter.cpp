@@ -1494,7 +1494,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 				bool fail = false;
 				MelderString_copy (& command2, lines [lineNumber]);
 
-				if (str32equ (command2.string, U"# Lua")) {
+				if (str32equ (command2.string, U"#!Lua")) {
 					isLuaScript = true;
 					// restore original newlines
 					for (int64 i = 0; i < textLength; i++) {
