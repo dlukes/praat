@@ -110,6 +110,20 @@ local group = p.group(sine, iris)
 print("IDs of objects in the group (Praat sees them as a vector): ", group)
 p.appendInfo("Detailed info about the group: ")
 p.inspect(group)
+
+-- Groups are just slightly special Lua arrays/tables, so they can be
+-- manipulated with regular table functions. You can e.g. pop the last
+-- element of the array...
+local removed_obj = table.remove(group)
+p.appendInfo("Popped last element out of the group... ")
+p.inspect(group)
+
+-- ... and put it back in.
+table.insert(group, removed_obj)
+p.appendInfo("... and put it back in: ")
+p.inspect(group)
+
+-- Run the Praat `Remove` command on the entire group.
 group:Remove()
 
 -- The group can also be passed to commands which accept a vector of
