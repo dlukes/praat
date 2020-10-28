@@ -1,8 +1,5 @@
 /* Interpreter.cpp
  *
- * This encapsulates all of the interpreter? Both the scripty and the
- * Formula-related parts?
- *
  * Copyright (C) 1993-2020 Paul Boersma
  *
  * This code is free software; you can redistribute it and/or modify
@@ -2075,8 +2072,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 					/*
 						Found an unknown word starting with a nonupper-case letter, optionally preceded by a period.
 						See whether the word is a variable name.
-
-						This is where we realize we're dealing with a variable?
 					*/
 					trace (U"found an unknown word starting with a nonupper-case letter, optionally preceded by a period");
 					char32 *p = & command2.string [0];
@@ -2090,7 +2085,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 						p ++;
 					if (*p == U'$') {
 						/*
-							Assign to a string variable. !!!
+							Assign to a string variable.
 						*/
 						trace (U"detected an assignment to a string variable");
 						char32 *endOfVariable = ++ p;
@@ -2143,7 +2138,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 						}
 						while (Melder_isHorizontalSpace (*p)) p ++;   // go to first token after (perhaps indexed) variable name
 						int typeOfAssignment;   // 0, 1, 2, 3 or 4
-						// where regular assignment is detected
 						if (*p == U'=') {
 							typeOfAssignment = 0;   // assignment
 						} else if (*p == U'+') {
@@ -2211,8 +2205,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							trace (U"evaluating string expression");
 							autostring32 stringValue = Interpreter_stringExpression (me, p);
 							trace (U"assigning to string variable ", variableName);
-							// this is maybe where string assignment happens
-							// (augmented if typeOfAssignment == 1)
 							if (typeOfAssignment == 1) {
 								InterpreterVariable var = Interpreter_hasVariable (me, variableName);
 								if (! var)
@@ -2231,7 +2223,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 					} else if (*p == U'#') {
 						if (p [1] == U'#') {
 							/*
-								Assign to a numeric matrix variable or to a matrix element. !!!
+								Assign to a numeric matrix variable or to a matrix element.
 							*/
 							static MelderString matrixName;
 							p ++;   // go to second '#'
@@ -2367,7 +2359,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 									Melder_throw (U"Missing right-hand expression in assignment to vector ", vectorName.string, U".");
 								if (isCommand (p)) {
 									/*
-									 * one example of how variables are assigned
 										Statement like: times# = Get all times
 									*/
 									praat_executeCommand (me, p);
@@ -2466,10 +2457,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 						}
 					} else {
 						/*
-							Try to assign to a numeric variable. !!!
-
-							Attempting to assign a numeric variable is probably the
-							default fallback action?
+							Try to assign to a numeric variable.
 						*/
 						double value;
 						char32 *variableName = command2.string;
@@ -2559,26 +2547,13 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							/*
 								Get the value of the query.
 							*/
-							// Melder_casual (U"-- getting value of variable: ", p);
-
-							// this works by diverting info output to a string, which
-							// is then parsed and assigned as the value of the
-							// variable, unless no info was written (which we
-							// determine in a very hacky way) and then we assume the
-							// result should be the currently selected object
 							MelderString_empty (& valueString);
 							autoMelderDivertInfo divert (& valueString);
 							MelderString_appendCharacter (& valueString, 1);   // will be overwritten by something totally different if any MelderInfo function is called...
-							// Melder_casual (U"first char of valueString prior to running the cmd: >>>", valueString.string [0], U"<<<");
-							// Melder_casual (U"length of valueString prior to running the cmd: >>>", str32len_utf8(valueString.string, true), U"<<<");
 							int status = praat_executeCommand (me, p);
-							// Melder_casual (U"first char of valueString after running the cmd: >>>", valueString.string [0], U"<<<");
-							// Melder_casual (U"length of valueString after running the cmd: >>>", str32len_utf8(valueString.string, true), U"<<<");
-							// Melder_casual (U"-- this is the string version of the result of the command: >>>", valueString.string, U"<<<");
 							if (status == 0) {
 								value = undefined;
 							} else if (valueString.string [0] == 1) {   // ...not overwritten by any MelderInfo function? then the return value will be the selected object
-								// Melder_casual(U"-- value is selected object");
 								int IOBJECT, selectedObject = 0, numberOfSelectedObjects = 0;
 								WHERE (SELECTED) { selectedObject = IOBJECT; numberOfSelectedObjects += 1; }
 								if (numberOfSelectedObjects > 1) {
@@ -2589,7 +2564,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 									value = theCurrentPraatObjects -> list [selectedObject]. id;
 								}
 							} else {
-								// Melder_casual(U"-- getting value from string");
 								value = Melder_atof (valueString.string);   // including --undefined--
 							}
 						} else {
@@ -2598,9 +2572,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 							*/
 							Interpreter_numericExpression (me, p, & value);
 						}
-
-						// Melder_casual (U"-- the value has been fetched and parsed and can be assigned: ", value);
-
 						/*
 							Assign the value to a variable.
 						*/
@@ -2609,9 +2580,6 @@ void Interpreter_run (Interpreter me, char32 *text) {
 								Use an existing variable, or create a new one.
 							*/
 							//Melder_casual (U"looking up variable ", variableName);
-							// InterpreterVariables and their fields is probably what
-							// I would have to manipulate to work with Praat values
-							// from Lua
 							InterpreterVariable var = Interpreter_lookUpVariable (me, variableName);
 							var -> numericValue = value;
 						} else {
@@ -2644,7 +2612,7 @@ void Interpreter_run (Interpreter me, char32 *text) {
 					assertErrorLineNumber = 0;
 					Melder_throw (U"Script assertion fails in line ", save_assertErrorLineNumber,
 							U": error « ", assertErrorString.string, U" » not raised. Instead: no error.");
-
+					
 				}
 			} catch (MelderError) {
 				//	Melder_casual (U"Error: << ", Melder_getError(),

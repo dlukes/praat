@@ -1,7 +1,5 @@
 /* Formula.cpp
  *
- * This is probably where formulas are evaluated.
- *
  * Copyright (C) 1992-2020 Paul Boersma
  *
  * This code is free software; you can redistribute it and/or modify
@@ -132,7 +130,7 @@ enum { NO_SYMBOL_,
 	#define LOW_FUNCTION_4 VEC_SOLVE_WEAKLYCONSTRAINED_
 		VEC_SOLVE_WEAKLYCONSTRAINED_,
 	#define HIGH_FUNCTION_4 VEC_SOLVE_WEAKLYCONSTRAINED_
-
+		
 	/* Functions of a variable number of variables; if you add, update the #defines. */
 	#define LOW_FUNCTION_N  DO_
 		DO_, DOSTR_,
@@ -258,9 +256,9 @@ static const conststring32 Formula_instructionNames [1 + highestSymbol] = { U"",
 	U"rowInners#", U"solve#", U"solve##",
 	U"fisherP", U"fisherQ", U"invFisherQ",
 	U"binomialP", U"binomialQ", U"incompleteBeta", U"invBinomialP", U"invBinomialQ",
-
+	
 	U"solveWeaklyConstrained#",
-
+	
 	U"do", U"do$",
 	U"writeInfo", U"writeInfoLine", U"appendInfo", U"appendInfoLine",
 	U"writeFile", U"writeFileLine", U"appendFile", U"appendFileLine",
@@ -1444,7 +1442,7 @@ static void parsePowerFactor () {
 		newparse (symbol);
 		return;
 	}
-
+	
 	if (symbol >= LOW_FUNCTION_4 && symbol <= HIGH_FUNCTION_4) {
 		const bool isParenthesis = fitArguments ();
 		parseExpression ();
@@ -1895,7 +1893,7 @@ static void Formula_optimizeFlow ()
 /* Optimalisatie 7: */
 /*    true   iftrue x   ->  goto x    */
 /*    false  iffalse x  ->  goto x    */
-
+			
 			if ((parse [i]. symbol == TRUE_ && parse [i + 1]. symbol == IFTRUE_)
 				|| (parse [i]. symbol == FALSE_ && parse [i + 1]. symbol == IFFALSE_))
 			{
@@ -2006,7 +2004,7 @@ static void Formula_evaluateConstants () {
 				if (parse [i]. content.number == 2.0 && parse [i + 1]. symbol == POWER_)
 					{ gain = 1; parse [i]. symbol = SQR_; }
 				else if (parse [i + 1]. symbol == MINUS_)
-					{ gain = 1; parse [i]. content.number = - parse [i]. content.number; }
+					{ gain = 1; parse [i]. content.number = - parse [i]. content.number; } 
 				else if (parse [i + 1]. symbol == SQR_)
 					{ gain = 1; parse [i]. content.number *= parse [i]. content.number; }
 				else if (parse [i + 1]. symbol == NUMBER_) {
@@ -5791,7 +5789,7 @@ static void do_VECsolveSparse () {
 	Melder_assert (n -> which == Stackel_NUMBER);
 	if (n -> number == 6) {
 		Stackel info = pop, tol = pop, niter = pop, nonzeros = pop, y = pop, dict = pop;
-		if (dict->which == Stackel_NUMERIC_MATRIX && y->which == Stackel_NUMERIC_VECTOR &&
+		if (dict->which == Stackel_NUMERIC_MATRIX && y->which == Stackel_NUMERIC_VECTOR && 
 			nonzeros->which == Stackel_NUMBER && niter->which == Stackel_NUMBER &&
 			tol->which == Stackel_NUMBER && info->which == Stackel_NUMBER) {
 			const MAT d = dict->numericMatrix;
@@ -5811,7 +5809,7 @@ static void do_VECsolveSparse () {
 		}
 	} else if (n -> number == 7) {
 		Stackel info = pop, tol = pop, niter = pop, nonzeros = pop, xstart = pop, y = pop, dict = pop;
-		if (dict->which == Stackel_NUMERIC_MATRIX && y->which == Stackel_NUMERIC_VECTOR &&
+		if (dict->which == Stackel_NUMERIC_MATRIX && y->which == Stackel_NUMERIC_VECTOR && 
 			xstart->which == Stackel_NUMERIC_VECTOR &&
 			nonzeros->which == Stackel_NUMBER && niter->which == Stackel_NUMBER &&
 			tol->which == Stackel_NUMBER && info->which == Stackel_NUMBER) {
@@ -7094,7 +7092,7 @@ case NUMBER_: { pushNumber (f [programPointer]. content.number);
 } break; case VEC_RANDOM_GAMMA_: { do_function_VECdd_d (NUMrandomGamma);
 } break; case MAT_RANDOM_GAMMA_: { do_function_MATdd_d (NUMrandomGamma);
 } break; case VEC_SOLVE_SPARSE_ : { do_VECsolveSparse ();
-} break; case VEC_SOLVE_NONNEGATIVE_ : { do_VECsolveNonnegative ();
+} break; case VEC_SOLVE_NONNEGATIVE_ : { do_VECsolveNonnegative (); 	
 } break; case MAT_PEAKS_: { do_MATpeaks ();
 } break; case SIZE_: { do_size ();
 } break; case NUMBER_OF_ROWS_: { do_numberOfRows ();
@@ -7172,9 +7170,9 @@ case NUMBER_: { pushNumber (f [programPointer]. content.number);
 } break; case MAT_MUL_TT_: { do_MATmul_tt ();
 } break; case VEC_REPEAT_: { do_VECrepeat ();
 } break; case VEC_ROW_INNERS_: { do_VECrowInners ();
-} break; case VEC_SOLVE_: { do_VECsolve ();
-} break; case MAT_SOLVE_: { do_MATsolve ();
-} break; case VEC_SOLVE_WEAKLYCONSTRAINED_: { do_VECsolveWeaklyConstrained ();
+} break; case VEC_SOLVE_: { do_VECsolve ();	
+} break; case MAT_SOLVE_: { do_MATsolve ();	
+} break; case VEC_SOLVE_WEAKLYCONSTRAINED_: { do_VECsolveWeaklyConstrained ();	
 /********** Pause window functions: **********/
 } break; case BEGIN_PAUSE_FORM_: { do_beginPauseForm ();
 } break; case PAUSE_FORM_ADD_REAL_: { do_pauseFormAddReal ();
