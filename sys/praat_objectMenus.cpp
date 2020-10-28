@@ -23,6 +23,7 @@
 #include "DataEditor.h"
 #include "site.h"
 #include "GraphicsP.h"
+#include "LuaPraat.h"
 
 #undef iam
 #define iam iam_LOOP
@@ -331,6 +332,21 @@ DO
 	MelderInfo_writeLine (U"Two-tailed p =    ", NUMchiSquareQ (x2, 1));
 	MelderInfo_close ();
 END }
+
+FORM (INFO_run_lua_script, U"Run a Lua script", nullptr) {
+	LABEL (U"Path to the Lua script to run:")
+	TEXTFIELD (script_path, nullptr, U"script.lua")
+	OK
+DO
+	if (! interpreter) {
+		autoInterpreter tempInterpreter = Interpreter_create (nullptr, nullptr);
+		LuaPraat lp {tempInterpreter.get()};
+		lp.run_file (script_path);
+	} else {
+		LuaPraat lp {interpreter};
+		lp.run_file (script_path);
+	}
+END}
 
 /********** Callbacks of the Technical menu. **********/
 
@@ -681,6 +697,7 @@ void praat_addMenus (GuiWindow window) {
 	goodiesMenu = menuItem ? menuItem -> d_menu : nullptr;
 	praat_addMenuCommand (U"Objects", U"Goodies", U"Calculator...", nullptr, 'U', STRING_praat_calculator);
 	praat_addMenuCommand (U"Objects", U"Goodies", U"Report difference of two proportions...", nullptr, 0, INFO_reportDifferenceOfTwoProportions);
+	praat_addMenuCommand (U"Objects", U"Goodies", U"Lua...", nullptr, 0, INFO_run_lua_script);
 
 	menuItem = praat_addMenuCommand (U"Objects", U"Praat", U"Preferences", nullptr, praat_UNHIDABLE, nullptr);
 	preferencesMenu = menuItem ? menuItem -> d_menu : nullptr;
