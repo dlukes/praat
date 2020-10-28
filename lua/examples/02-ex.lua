@@ -201,8 +201,8 @@ print("Lua agrees: It was the ", ship, " with ", num_people, " passengers.")
 
 
 
-print("--------------------------- Primitive vector and matrix support")
 print("---------------------------------------------------------------")
+print("--------------------------- Primitive vector and matrix support")
 
 
 -- If a Praat command requires or accepts a vector or a matrix, you can
@@ -212,8 +212,8 @@ print({{1, 2}, {3, 4}})
 
 
 
-print("-------------------------------------------- External libraries")
 print("---------------------------------------------------------------")
+print("-------------------------------------------- External libraries")
 
 
 -- If you have any Lua libraries you'd like to (re)use across your
