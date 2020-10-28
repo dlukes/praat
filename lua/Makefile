@@ -8,6 +8,7 @@ OBJECTS = LuaPraat.o
 all: libLuaPraat.a
 
 clean:
+	$(RM) LuaPraat.cpp
 	$(RM) $(OBJECTS)
 	$(RM) libLuaPraat.a
 
