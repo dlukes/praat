@@ -102,50 +102,26 @@ static int luapraat_praat_script(lua_State *L) {
 	return 0;
 }
 
-enum class PraatVarType {
-	String,
-	Numeric,
-	Vector,
-	Matrix,
-};
-
 // Get the value of a Praat variable.
 static int luapraat_get_praat_var(lua_State *L) {
 	const char *var_name_c = lua_tostring(L, 1);
 	autostring32 var_name = Melder_8to32(var_name_c);
-	integer end = str32len(var_name.get()) - 1;
-	PraatVarType var_type;
-	switch (var_name[end]) {
-		case U'$':
-			var_type = PraatVarType::String;
-			break;
-		case U'#':
-			if (var_name[end - 1] == U'#') {
-				var_type = PraatVarType::Matrix;
-			} else {
-				var_type = PraatVarType::Vector;
-			}
-			break;
-		default:
-			var_type = PraatVarType::Numeric;
-			break;
-	}
-
 	InterpreterVariable var = Interpreter_hasVariable(INTERPRETER, var_name.get());
 	if (var == nullptr) {
 		lua_pushnil(L);
 	} else {
-		switch (var_type) {
-			case PraatVarType::String:
+		integer end = str32len(var_name.get()) - 1;
+		switch (var_name[end]) {
+			case U'$':
 				lua_pushstring(L, Melder_32to8(var->stringValue.get()).get());
 				break;
-			case PraatVarType::Numeric:
-				lua_pushnumber(L, var->numericValue);
-				break;
-			default:
+			case U'#':
 				// TODO: implement access to vectors and matrices as well? Maybe
 				// just to their individual elements?
 				return luaL_error(L, "Accessing Praat vectors and matrices from Lua not implemented.");
+				break;
+			default:
+				lua_pushnumber(L, var->numericValue);
 				break;
 		}
 	}
@@ -197,7 +173,7 @@ LuaPraat::LuaPraat(Interpreter interpreter) {
 	// leave it alone. This is the difference between "x = Lua ..." vs.
 	// "Lua ..." in the Praat script.
 	if (MelderInfo::_p_currentBuffer != & MelderInfo::_foregroundBuffer) {
-		MelderInfo_open ();
+		MelderInfo_open();
 	}
 
 	L = luaL_newstate();
