@@ -189,7 +189,7 @@ local function praat_cmd(...)
       -- commands, but needed because we want commands that create an
       -- object to return that object, and not a one-element array. The
       -- inconsistency is somewhat mitigated by praat_obj_meta having a
-      -- __len metamethod which returns 1, i.e.  they sort of pretend
+      -- __len metamethod which returns 1, i.e. they sort of pretend
       -- like they're a one-element array.
       ans = last_obj
     end

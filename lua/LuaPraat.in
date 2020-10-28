@@ -49,7 +49,7 @@ static int luapraat_praat_cmd(lua_State *L) {
 	// silenced using nocheck, 1 otherwise. The 0 shouldn't happen too
 	// often, since when calling Praat from Lua, it's better to use Lua's
 	// exception handling facilities: instead of `_praat("nocheck X")`, do
-	// `pcall(praat.X)`.  But let's handle it the same way Interpreter.cpp
+	// `pcall(praat.X)`. But let's handle it the same way Interpreter.cpp
 	// does, for consistency's sake.
 	try {
 		no_silent_error = praat_executeCommand(INTERPRETER, cmd.get());
