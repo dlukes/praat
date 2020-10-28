@@ -19,6 +19,9 @@ appendInfoLine: "Result is not assigned, so it gets printed: "
 Lua: "return.lua"
 appendInfoLine: newline$, "^^^^^^^^^^^^^^^^^ Here it is."
 
+# If you don't need the result but also don't want it showing up in the
+# output, just assign it to a throwaway variable you won't use.
+
 # Praat objects can be created in Lua and their ID can be returned to
 # the parent Praat script, which makes it possible to further work with
 # them.
